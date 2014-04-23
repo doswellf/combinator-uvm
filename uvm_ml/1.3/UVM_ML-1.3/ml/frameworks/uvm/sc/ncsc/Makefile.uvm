@@ -1,0 +1,127 @@
+# ----------------------------------------------------------------------
+#    Copyright 2012 Cadence Design Systems, Inc.
+#    All Rights Reserved Worldwide
+# 
+#    Licensed under the Apache License, Version 2.0 (the
+#    "License"); you may not use this file except in
+#    compliance with the License.  You may obtain a copy of
+#    the License at
+# 
+#        http://www.apache.org/licenses/LICENSE-2.0
+# 
+#    Unless required by applicable law or agreed to in
+#    writing, software distributed under the License is
+#    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#    CONDITIONS OF ANY KIND, either express or implied.  See
+#    the License for the specific language governing
+#    permissions and limitations under the License.
+# ----------------------------------------------------------------------
+ifndef IES_VERSION
+IES_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_ies_version.sh)
+endif
+export IES_VERSION
+
+UVM_ML_COMPILER_VERSION ?= $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh $(UVM_ML_CC))
+
+
+TARGETS_lnx86 = libuvm_sc_fw.so
+STATIC_TARGETS_lnx86 = libuvm_sc_fw.a
+
+LIB_NAME=$(TARGETS_$(ARCH))
+STATIC_LIB_NAME=$(STATIC_TARGETS_$(ARCH))
+
+ifeq ($(BITS),64)
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/ncsc/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)/64bit
+BIT_FLAGS=-m64 -fPIC
+BEXT=.ncsc.$(IES_VERSION).$(UVM_ML_COMPILER_VERSION).64
+else
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/ncsc/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)
+BIT_FLAGS=-m32
+BEXT=.ncsc.$(IES_VERSION).$(UVM_ML_COMPILER_VERSION)
+endif
+
+
+ifdef NCSC_PRECOMP_LIB_PATH
+ifeq ($(BITS),64)
+NCSC_PRECOMP_LIB_DIR=$(NCSC_PRECOMP_LIB_PATH)/64bit
+else
+NCSC_PRECOMP_LIB_DIR=$(NCSC_PRECOMP_LIB_PATH)
+endif
+else
+NCSC_PRECOMP_LIB_DIR ?= $(LIB_BUILD_DIR)
+endif
+
+TARGET_LIB = $(LIB_BUILD_DIR)/$(LIB_NAME)
+STATIC_LIB = $(LIB_BUILD_DIR)/$(STATIC_LIB_NAME)
+
+UVM_SC=$(UVM_ML_HOME)/ml/frameworks/uvm/sc/
+
+DEBUG_FLAGS ?= 
+
+
+UVM_OBJS = \
+	   $(UVM_SC)/base/uvm_component$(BEXT).o \
+	   $(UVM_SC)/base/uvm_factory$(BEXT).o \
+	   $(UVM_SC)/base/uvm_globals$(BEXT).o \
+	   $(UVM_SC)/base/uvm_ids$(BEXT).o \
+	   $(UVM_SC)/base/uvm_manager$(BEXT).o \
+	   $(UVM_SC)/base/uvm_object$(BEXT).o \
+	   $(UVM_SC)/base/uvm_packer$(BEXT).o \
+	   $(UVM_SC)/base/uvm_typed$(BEXT).o \
+	$(UVM_SC)/base/uvm_barrier$(BEXT).o \
+	$(UVM_SC)/base/uvm_phase$(BEXT).o \
+	$(UVM_SC)/base/uvm_common_phase$(BEXT).o \
+	$(UVM_SC)/base/uvm_schedule$(BEXT).o  \
+	$(UVM_SC)/base/uvm_common_schedule$(BEXT).o \
+	$(UVM_SC)/base/uvm_resource_base$(BEXT).o \
+	$(UVM_SC)/base/uvm_resource_pool$(BEXT).o \
+
+DEPFILES= $(subst .o,.d,$(UVM_OBJS))
+
+
+SYSTEMC_HEADERS ?= `ncroot`/tools/systemc/include
+
+TOOLS_INCLUDE ?= `ncroot`/tools/include
+
+LDOPTS =  -shared $(BIT_FLAGS)
+CFLAGS =  $(BIT_FLAGS) -DIES_VERSION_$(subst .,_,$(IES_VERSION)) -I$(UVM_SC)/ncsc -I$(UVM_SC)/ncsc/$(IES_VERSION)  -I$(UVM_SC) -I$(UVM_SC)/base -I$(UVM_SC)/base/ncsc -I$(TOOLS_INCLUDE) -I$(SYSTEMC_HEADERS) 
+
+
+
+
+.PHONY: default
+
+default: $(LIB_BUILD_DIR) $(TARGET_LIB) $(STATIC_LIB)
+$(LIB_BUILD_DIR):
+	mkdir -p $@
+$(STATIC_LIB) : $(UVM_OBJS)
+	ar cvr $@ $^
+
+
+$(TARGET_LIB) : $(UVM_OBJS) 
+	$(UVM_ML_LD) $(UVM_OBJS) $(LDOPTS) -Wl,-rpath -Wl,$(NCSC_PRECOMP_LIB_DIR) -L$(NCSC_PRECOMP_LIB_DIR) -luvm_ml_ncsc_precomp -o $@
+
+
+%$(BEXT).o: %.cpp 
+	$(UVM_ML_CC)   $(CFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+%$(BEXT).d: %.cpp
+	$(UVM_ML_CC)  $(CFLAGS) $(DEBUG_FLAGS)  -o $@ -MM -MQ $(subst .d,.o,$@) $<
+
+ifndef DEFINE_OWN_CLEAN
+clean: 
+	-rm -f  $(TARGET_LIB) $(STATIC_LIB) $(UVM_OBJS) $(DEPFILES) 
+endif
+
+
+
+
+ifndef NO_DEPFILES_REQUIRED
+ifeq ($(MAKECMDGOALS),)
+GOALS=default
+else
+GOALS=$(MAKECMDGOALS)
+endif
+ifneq ($(words $(filter-out clean,$(GOALS))),0)
+include $(DEPFILES)
+endif
+endif

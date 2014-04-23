@@ -1,0 +1,9 @@
+set_cpf_version 1.1
+set_hierarchy_separator "/"
+
+set_design apb_subsystem_top -testbench
+
+set_instance i_apb_subsystem
+source $env(SOCV_KIT_HOME)/designs/socv/rtl/rtl_lpw/apb_subsystem/cpf/apb_subsystem.cpf
+
+end_design

@@ -1,0 +1,87 @@
+1.  Get the binutils overlay.
+
+First, log into the OpenCores CVS server:
+
+ (ksh) % CVSROOT=:pserver:anonymous@cvs.opencores.org:/cvsroot/anonymous
+ (csh) % setenv CVSROOT :pserver:anonymous@cvs.opencores.org:/cvsroot/anonymous
+       % cvs login
+
+When prompted for a password, just press Enter.
+
+Then, check out the binutils overlay:
+
+ % cvs -z9 co or1k/binutils
+
+2.  Get the gcc overlay.
+
+If necessary, log into the OpenCores CVS server; this is not necessary if you
+have already done it in the step above.
+
+Then, check out the gcc overlay:
+
+ % cvs -z9 co or1k/gcc
+
+3.  Get the binutils distribution, version 2.16.1, from:
+    ftp://ftp.gnu.org/gnu/binutils/binutils-2.16.1.tar.bz2
+
+    Expand this into the current directory:
+
+    % bunzip2 < binutils-2.16.1.tar.bz2 | tar -xf -
+
+4.  Get the gcc distribution, version 3.4.4, from:
+    ftp://ftp.gnu.org/gnu/gcc/gcc-3.4.4/gcc-core-3.4.4.tar.bz2
+
+    Expand this into the current directory:
+
+    % bunzip2 < gcc-core-3.4.4.tar.bz2 | tar -xf -
+
+5.  Patch the binutils:
+    % patch -p1 < or1k/binutils/binutils-2.16.1/binutils-2.16.1.diff
+
+6.  Patch gcc:
+    % mv gcc-3.4.4 gcc-3.4.4-DONE
+    % patch -p0 < or1k/gcc/gcc-3.4.4/gcc-3.4.4-or32-unified.diff
+    % mv gcc-3.4.4-DONE gcc-3.4.4
+
+7.  Fix the following bugs in the gcc or32 implementation:
+
+ Edit gcc-3.4.4/gcc/config/or32/or32.c:
+ - around line 498, change this:
+      fprintf (file, "\tl.nop\n");
+ - to this:
+      fprintf (file, "\tl.nop\t0\n");
+
+ - around line 775, change this:
+    fprintf (file, "\n\tl.nop\t\t\t# nop delay slot");
+ - to this:
+    fprintf (file, "\n\tl.nop\t0\t\t# nop delay slot");
+
+8.  Make a build directory:
+    % mkdir build
+
+9.  Make a binutils directory in the build directory and change to it:
+    % cd build
+    % mkdir binutils
+    % cd binutils
+
+10. Build the binutils, and install them:
+    % ../../binutils-2.16.1/configure --prefix=$HOME/usr/local --target=or32-elf
+    % make
+    % make install
+
+11. Change to the build directory, make a gcc directory and change to it:
+    % cd ..
+    % mkdir gcc
+    % cd gcc
+
+12. Ensure the bin directory from the above build is in your path:
+
+    csh: % set path = ( $path ${HOME}/usr/local/bin )
+    ksh: % export PATH=$PATH:$HOME/usr/local/bin
+
+13. Build gcc and install it:
+    % ../../gcc-3.4.4/configure --prefix=$HOME/usr/local \ 
+        --target=or32-elf --enable-languages=c
+    % make
+    % make install
+

@@ -1,0 +1,5 @@
+
+// for OR1K
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/opencores/or1200.irunargs
+
+

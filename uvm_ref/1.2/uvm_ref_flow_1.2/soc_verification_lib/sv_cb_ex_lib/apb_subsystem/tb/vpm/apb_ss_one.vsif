@@ -1,0 +1,62 @@
+//-------------------------------------------------------------------------
+// File name   : apb_ss_one.vsif
+// Title       : 
+// Project     : APB SubSystem Level Verification
+// Created     :
+// Description : vsif that runs the apb_ss simulations with Incisive Enterprise Manager
+// Notes       :  
+//-------------------------------------------------------------------------
+//   Copyright 1999-2010 Cadence Design Systems, Inc.
+//   All Rights Reserved Worldwide
+//
+//   Licensed under the Apache License, Version 2.0 (the
+//   "License"); you may not use this file except in
+//   compliance with the License.  You may obtain a copy of
+//   the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in
+//   writing, software distributed under the License is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+//   CONDITIONS OF ANY KIND, either express or implied.  See
+//   the License for the specific language governing
+//   permissions and limitations under the License.
+//----------------------------------------------------------------------
+
+//
+// Session container
+//
+session vm_apb_ss_sessions {
+  top_dir : $ENV(MY_REGRESSION_AREA)/apb_ss ;
+  output_mode: terminal ;
+};
+
+
+//
+// Define default or common simulation attributes for test groups
+//
+group apb_ss_tests {
+
+  // run script to lauch simulation
+  run_script: "$RUN_ENV(SOCV_KIT_HOME)/soc_verification_lib/sv_cb_ex_lib/apb_subsystem/tb/scripts/vm_run.sh" ;
+
+  // scan script to scan logs for simulation errors and information
+  scan_script: "vm_scan.pl $RUN_ENV(VMANAGER_HOME)/bin/shell.flt $RUN_ENV(VMANAGER_HOME)/bin/uvm.flt $RUN_ENV(VMANAGER_HOME)/bin/ius.flt";
+  
+  // Other default attributes values
+  count : 5;              // Default run count
+  pre_commands: "";       // Specman Pre-commands if needed
+  timeout : 13000000;     // Timeout for run (use 0 for no timeout)
+  sv_seed: random;       // Random seed selection
+
+
+  //
+  // Simulation runs in test containers
+  //
+  test apb_subsystem_test {
+    count : 1;
+  };
+
+
+};

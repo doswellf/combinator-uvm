@@ -1,0 +1,4 @@
+
+//for ARM9 subsystem
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/arm_subsystem/rtl/arm_subsystem.irunargs
+

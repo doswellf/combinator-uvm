@@ -1,0 +1,12 @@
+PROJECT_NAME           = "UVM-ML"
+INPUT                  = ./uvm_sc_framework
+OUTPUT_DIRECTORY       = ../html_docs/uvm_sc_framework
+HTML_OUTPUT            = ./
+FILE_PATTERNS          = *.h *.cpp
+RECURSIVE              = YES
+SHOW_DIRECTORIES       = YES
+GENERATE_LATEX         = NO
+SOURCE_BROWSER         = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+VERBATIM_HEADERS       = NO
+EXCLUDE                = ./uvm_sc_framework/packages

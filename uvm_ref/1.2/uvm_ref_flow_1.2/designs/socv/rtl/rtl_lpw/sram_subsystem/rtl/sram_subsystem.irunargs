@@ -1,0 +1,8 @@
+sram_subsystem.v
+insn_sram_subsystem.v
+en_gen.v
+sram_response_gen.v
+
+generic_sram_128k_wrapper.v
+generic_sram_32k_wrapper.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/misc/rtl/generic_sram_bit.v

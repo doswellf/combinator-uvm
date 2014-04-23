@@ -1,0 +1,331 @@
+
+######################################################################################### 
+# set_design - This command specifies the name of the module to which the power
+# information in the CPF file applies.
+# set_cpf_version - Specifies the version of the format.
+# set_hierarchy_seperator - Specifies the hierarchy delimeter characterused in CPF file.
+######################################################################################### 
+
+set_cpf_version 1.1
+set_hierarchy_separator "/"
+set_design chip
+
+# set the variable for Library file.
+set  LIB_CPF_PATH $env(SOCV_KIT_HOME)/designs/socv/rtl/rtl_lpw/apb_subsystem/cpf
+# set variable for uart cpf file
+set  UART_CPF_PATH $env(SOCV_KIT_HOME)/designs/socv/rtl/rtl_lpw/uart/cpf
+# set variable for smc cpf file
+set  SMC_CPF_PATH $env(SOCV_KIT_HOME)/designs/socv/rtl/rtl_lpw/smc/cpf
+# set variable for smc cpf file
+set  MACB_CPF_PATH $env(SOCV_KIT_HOME)/designs/socv/rtl/rtl_lpw/macb/cpf
+
+include $LIB_CPF_PATH/lib_chip.cpf
+
+######################################################################################### 
+create_power_nets -nets VDD -voltage { 0.6:1.2:0.2 } -peak_ir_drop_limit 0 \
+    -average_ir_drop_limit 0 
+
+create_power_nets -nets VDD1_2 -voltage 1.2 -peak_ir_drop_limit 0 \
+    -average_ir_drop_limit 0 
+
+
+create_ground_nets -nets VSS -peak_ir_drop_limit 0 -average_ir_drop_limit 0 
+
+
+######################################################################################### 
+
+## dvfs voltage for the cores
+create_nominal_condition -name V0.6 -voltage 0.6  -state on
+create_nominal_condition -name V0.8 -voltage 0.8  -state on
+create_nominal_condition -name V1.0 -voltage 1.0  -state on
+## Full speed, with bias 
+create_nominal_condition -name V1.2 -voltage 1.2 \
+    -ground_voltage 0.0 -pmos_bias_voltage 1.0 -nmos_bias_voltage 0.2  -state on
+
+create_nominal_condition -name V0.0 -voltage 0.0  -state off
+
+######################################################################################### 
+# 
+######################################################################################### 
+create_power_domain -name PDcore -default \
+    -active_state_conditions { V0.6@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_core_06v \
+                               V0.8@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_core_08v  \
+                               V1.0@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_core_10v  \
+                               V1.2@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_core_12v } 
+
+
+create_power_domain -name PDsmc -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/pwr1_off_smc \
+    -active_state_conditions { V0.6@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_smc_06v  \
+                               V0.8@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_smc_08v  \
+                               V1.0@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_smc_10v  \
+                               V1.2@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_smc_12v }  \
+    -base_domains { PDcore }
+
+create_power_domain -name PDurt -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/pwr1_off_urt \
+    -active_state_conditions { V0.6@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_uart_06v  \
+                               V0.8@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_uart_08v  \
+                               V1.0@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_uart_10v  \
+                               V1.2@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_uart_12v }  \
+    -base_domains { PDcore }
+
+create_power_domain -name PDmacb0 -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/pwr1_off_macb0 \
+    -active_state_conditions { V1.2@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_macb0_12v } \
+    -base_domains { PDcore } 
+
+create_power_domain -name PDmacb1 -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/pwr1_off_macb1 \
+    -active_state_conditions { V1.2@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_macb1_12v } \
+    -base_domains { PDcore } 
+
+create_power_domain -name PDmacb2 -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/pwr1_off_macb2 \
+    -active_state_conditions { V1.2@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_macb2_12v } \
+    -base_domains { PDcore } 
+
+create_power_domain -name PDmacb3 -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/pwr1_off_macb3 \
+    -active_state_conditions { V1.2@i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/ase_macb3_12v } \
+    -base_domains { PDcore } 
+
+######################################################################################### 
+#-------------------------------------------------------------------------------
+#   update domains/modes
+#-------------------------------------------------------------------------------
+update_power_domain -name PDsmc -primary_power_net VDD    -primary_ground_net \
+    VSS  -transition_slope 0.02
+
+update_power_domain -name PDurt -primary_power_net VDD    -primary_ground_net \
+    VSS  -transition_slope 0.02
+
+update_power_domain -name PDcore -primary_power_net VDD    -primary_ground_net \
+    VSS  -transition_slope 0.02
+
+update_power_domain -name PDmacb0 -primary_power_net VDD1_2 \
+    -primary_ground_net VSS 
+update_power_domain -name PDmacb1 -primary_power_net VDD1_2 \
+    -primary_ground_net VSS 
+update_power_domain -name PDmacb2 -primary_power_net VDD1_2 \
+    -primary_ground_net VSS 
+update_power_domain -name PDmacb3 -primary_power_net VDD1_2 \
+    -primary_ground_net VSS 
+
+######################################################################################### 
+#             
+#              CREATE POWER MODE 
+#
+######################################################################################### 
+
+create_power_mode -name PM_Default -default -domain_conditions { \
+    PDcore@V1.2 PDsmc@V1.2 PDurt@V1.2 PDmacb0@V1.2 \
+    PDmacb1@V1.2 PDmacb2@V1.2 PDmacb3@V1.2 } 
+
+create_power_mode -name PM_smc -domain_conditions { PDcore@V1.0 PDsmc@V0.0 \
+    PDurt@V1.0 PDmacb0@V1.2 PDmacb1@V1.2 PDmacb2@V1.2 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_uart -domain_conditions { PDcore@V1.2 \
+    PDsmc@V1.2 PDurt@V0.0 PDmacb0@V1.2 PDmacb1@V1.2 \
+    PDmacb2@V1.2 PDmacb3@V1.2 } 
+
+create_power_mode -name PM_smc_uart -domain_conditions { PDcore@V1.0 \
+    PDsmc@V0.0 PDurt@V0.0 PDmacb0@V1.2 PDmacb1@V1.2 PDmacb2@V1.2 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb0 -domain_conditions { PDcore@V1.0 \
+    PDsmc@V1.0 PDurt@V1.0 PDmacb0@V0.0 PDmacb1@V1.2 PDmacb2@V1.2 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb1 -domain_conditions { PDcore@V1.0 \
+    PDsmc@V1.0 PDurt@V1.0 PDmacb0@V1.2 PDmacb1@V0.0 PDmacb2@V1.2 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb2 -domain_conditions { PDcore@V1.0 \
+    PDsmc@V1.0 PDurt@V1.0 PDmacb0@V1.2 PDmacb1@V1.2 PDmacb2@V0.0 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb3 -domain_conditions { PDcore@V1.0 \
+    PDsmc@V1.0 PDurt@V1.0 PDmacb0@V1.2 PDmacb1@V1.2 PDmacb2@V1.2 \
+    PDmacb3@V0.0 } 
+
+create_power_mode -name PM_macb01 -domain_conditions { PDcore@V0.8 \
+    PDsmc@V0.8 PDurt@V0.8 PDmacb0@V0.0 PDmacb1@V0.0 PDmacb2@V1.2 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb02 -domain_conditions { PDcore@V0.8 \
+    PDsmc@V0.8 PDurt@V0.8 PDmacb0@V0.0 PDmacb1@V1.2 PDmacb2@V0.0 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb03 -domain_conditions { PDcore@V0.8 \
+    PDsmc@V0.8 PDurt@V0.8 PDmacb0@V0.0 PDmacb1@V1.2 PDmacb2@V1.2 \
+    PDmacb3@V0.0 } 
+
+create_power_mode -name PM_macb12 -domain_conditions { PDcore@V0.8 \
+    PDsmc@V0.8 PDurt@V0.8 PDmacb0@V1.2 PDmacb1@V0.0 PDmacb2@V0.0 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb13 -domain_conditions { PDcore@V0.8 \
+    PDsmc@V0.8 PDurt@V0.8 PDmacb0@V1.2 PDmacb1@V0.0 PDmacb2@V1.2 \
+    PDmacb3@V0.0 } 
+
+create_power_mode -name PM_macb23 -domain_conditions { PDcore@V0.8 \
+    PDsmc@V0.8 PDurt@V0.8 PDmacb0@V1.2 PDmacb1@V1.2 PDmacb2@V0.0 \
+    PDmacb3@V0.0 } 
+
+create_power_mode -name PM_macb012 -domain_conditions { PDcore@V0.6 \
+    PDsmc@V0.6 PDurt@V0.6 PDmacb0@V0.0 PDmacb1@V0.0 PDmacb2@V0.0 \
+    PDmacb3@V1.2 } 
+
+create_power_mode -name PM_macb013 -domain_conditions { PDcore@V0.6 \
+    PDsmc@V0.6 PDurt@V0.6 PDmacb0@V0.0 PDmacb1@V0.0 PDmacb2@V1.2 \
+    PDmacb3@V0.0 } 
+
+create_power_mode -name PM_macb023 -domain_conditions { PDcore@V0.6 \
+    PDsmc@V0.6 PDurt@V0.6 PDmacb0@V0.0 PDmacb1@V1.2 PDmacb2@V0.0 \
+    PDmacb3@V0.0 } 
+
+create_power_mode -name PM_macb123 -domain_conditions { PDcore@V0.6 \
+    PDsmc@V0.6 PDurt@V0.6 PDmacb0@V1.2 PDmacb1@V0.0 PDmacb2@V0.0 \
+    PDmacb3@V0.0 } 
+
+create_power_mode -name PM_macb_off -domain_conditions { PDcore@V0.6 \
+    PDsmc@V0.6 PDurt@V0.6 PDmacb0@V0.0 PDmacb1@V0.0 PDmacb2@V0.0 \
+    PDmacb3@V0.0 } 
+
+
+
+## [1] Create transition mode from PM_Default to PM_macb0
+create_mode_transition -name PM_Default_PM_macb0 -from_mode PM_Default -to_mode PM_macb0 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac0_start 
+
+
+## [2] Create transition mode from PM_Default to PM_macb1
+create_mode_transition -name PM_Default_PM_macb1 -from_mode PM_Default -to_mode PM_macb1 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac1_start 
+
+## [3] Create transition mode from PM_Default to PM_macb2
+create_mode_transition -name PM_Default_PM_macb2 -from_mode PM_Default -to_mode PM_macb2 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac2_start 
+
+
+## [4] Create transition mode from PM_Default to PM_macb3
+create_mode_transition -name PM_Default_PM_macb3 -from_mode PM_Default -to_mode PM_macb3 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac3_start 
+
+
+## [5] Create transition mode from PM_Default to PM_macb01
+create_mode_transition -name PM_Default_PM_macb01 -from_mode PM_Default -to_mode PM_macb01 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac01_start 
+
+## [6] Create transition mode from PM_Default to PM_macb02
+create_mode_transition -name PM_Default_PM_macb02 -from_mode PM_Default -to_mode PM_macb02 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac02_start 
+
+## [7] Create transition mode from PM_Default to PM_macb03
+create_mode_transition -name PM_Default_PM_macb03 -from_mode PM_Default -to_mode PM_macb03 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac03_start 
+
+## [8] Create transition mode from PM_Default to PM_macb12
+create_mode_transition -name PM_Default_PM_macb12 -from_mode PM_Default -to_mode PM_macb12 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac12_start 
+
+## [9] Create transition mode from PM_Default to PM_macb13
+create_mode_transition -name PM_Default_PM_macb13 -from_mode PM_Default -to_mode PM_macb13 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac13_start 
+
+## [10] Create transition mode from PM_Default to PM_macb23
+create_mode_transition -name PM_Default_PM_macb23 -from_mode PM_Default -to_mode PM_macb23 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac23_start 
+
+## [11] Create transition mode from PM_Default to PM_macb012
+create_mode_transition -name PM_Default_PM_macb012 -from_mode PM_Default -to_mode PM_macb012 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac012_start 
+
+## [12] Create transition mode from PM_Default to PM_macb013
+create_mode_transition -name PM_Default_PM_macb013 -from_mode PM_Default -to_mode PM_macb013 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac013_start 
+
+## [13] Create transition mode from PM_Default to PM_macb023
+create_mode_transition -name PM_Default_PM_macb023 -from_mode PM_Default -to_mode PM_macb023 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac023_start 
+
+## [14] Create transition mode from PM_Default to PM_macb123
+create_mode_transition -name PM_Default_PM_macb123 -from_mode PM_Default -to_mode PM_macb123 \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac123_start 
+
+## [15] Create transition mode from PM_Default to PM_macb_off
+create_mode_transition -name PM_Default_PM_macb_off -from_mode PM_Default -to_mode PM_macb_off \
+    -start_condition i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/mte_mac_off_start 
+
+
+
+########################################################################
+## domain mapping
+########################################################################
+set_instance i_apb_subsystem/i_uart1_veneer/i_uart1 \
+    -domain_mapping { {PDurt_block PDurt } } \
+    -port_mapping  { {restore_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/restore_edge_urt} \
+     {save_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/save_edge_urt} \
+     {isolation_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_urt} }
+
+include $UART_CPF_PATH/uart.cpf
+
+set_instance i_apb_subsystem/i_smc_veneer/i_smc \
+    -domain_mapping { {PDsmc_block PDsmc } } \
+    -port_mapping  { {restore_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/restore_edge_smc} \
+     {save_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/save_edge_smc} \
+     {isolation_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_smc} }
+
+include $SMC_CPF_PATH/smc.cpf
+
+set_instance i_macb0_veneer/i_macb \
+    -domain_mapping { {PDmacb_block PDmacb0 } } \
+    -port_mapping  { {restore_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/restore_edge_macb0} \
+     {save_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/save_edge_macb0} \
+     {isolation_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_macb0} }
+include $MACB_CPF_PATH/macb.cpf
+
+set_instance i_macb1_veneer/i_macb \
+    -domain_mapping { {PDmacb_block PDmacb1 } } \
+    -port_mapping  { {restore_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/restore_edge_macb1} \
+     {save_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/save_edge_macb1} \
+     {isolation_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_macb1} }
+include $MACB_CPF_PATH/macb.cpf
+
+set_instance i_macb2_veneer/i_macb \
+    -domain_mapping { {PDmacb_block PDmacb2 } } \
+    -port_mapping  { {restore_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/restore_edge_macb2} \
+     {save_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/save_edge_macb2} \
+     {isolation_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_macb2} }
+include $MACB_CPF_PATH/macb.cpf
+
+set_instance i_macb3_veneer/i_macb \
+    -domain_mapping { {PDmacb_block PDmacb3 } } \
+    -port_mapping  { {restore_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/restore_edge_macb3} \
+     {save_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/save_edge_macb3} \
+     {isolation_signal i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_macb3} }
+include $MACB_CPF_PATH/macb.cpf
+
+#########################################################################################
+#Assertions  control rule for PCM module .This will disable the assertions  during the 
+#power down.
+#########################################################################################
+create_assertion_control -name ASC_SMC -domains { PDsmc } -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_smc -type reset 
+create_assertion_control -name ASC_UART -domains { PDurt } -shutoff_condition \
+    i_apb_subsystem/i_power_ctrl_veneer/i_power_ctrl/isolate_urt -type reset 
+
+# Level shifters
+create_level_shifter_rule -name LS_MAB0 -from PDcore -to PDmacb0
+create_level_shifter_rule -name LS_MAB1 -from PDcore -to PDmacb1
+create_level_shifter_rule -name LS_MAB2 -from PDcore -to PDmacb2
+create_level_shifter_rule -name LS_MAB3 -from PDcore -to PDmacb3
+
+update_level_shifter_rules -names LS_MAB0 -location to -cells ls_lh_buf
+update_level_shifter_rules -names LS_MAB1 -location to -cells ls_lh_buf
+update_level_shifter_rules -names LS_MAB2 -location to -cells ls_lh_buf
+update_level_shifter_rules -names LS_MAB3 -location to -cells ls_lh_buf
+
+end_design

@@ -1,0 +1,65 @@
+#    Copyright 2012 Cadence Design Systems, Inc.
+#    All Rights Reserved Worldwide
+# 
+#    Licensed under the Apache License, Version 2.0 (the
+#    "License"); you may not use this file except in
+#    compliance with the License.  You may obtain a copy of
+#    the License at
+# 
+#        http://www.apache.org/licenses/LICENSE-2.0
+# 
+#    Unless required by applicable law or agreed to in
+#    writing, software distributed under the License is
+#    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#    CONDITIONS OF ANY KIND, either express or implied.  See
+#    the License for the specific language governing
+#    permissions and limitations under the License.
+# ----------------------------------------------------------------------
+.PHONY: clean
+ifndef UVM_ML_COMPILER_VERSION
+UVM_ML_COMPILER_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh ${UVM_ML_CC})
+endif
+
+ifeq ($(BITS),32)
+SV_ADAPTER_LIB= $(UVM_ML_HOME)/ml/libs/uvm_sv/$(UVM_ML_COMPILER_VERSION)/libuvm_sv_ml.a
+BIT_FLAGS=-m32
+LINK_OPTIONS=-m32
+TARGET_LIBRARY=libml_uvm.so
+BEXT=
+LIB_BUILD_DIR=$(CURDIR)/${UVM_ML_COMPILER_VERSION}
+else
+SV_ADAPTER_LIB= $(UVM_ML_HOME)/ml/libs/uvm_sv/$(UVM_ML_COMPILER_VERSION)/64bit/libuvm_sv_ml.a
+LINK_OPTIONS=-m64 -fPIC
+BIT_FLAGS=-m64 -fPIC
+BEXT=.64
+LIB_BUILD_DIR=$(CURDIR)/${UVM_ML_COMPILER_VERSION}/64bit
+endif
+
+
+TARGET_LIBRARY=$(LIB_BUILD_DIR)/libml_uvm.so 
+
+
+OBJS=bp_cdns$(BEXT).o
+DEPFILES=$(subst .o,.d,$(OBJS))
+
+COMPILE_OPTIONS=$(BIT_FLAGS) -I$(UVM_ML_HOME)/ml/backplane 
+
+
+%$(BEXT).o:%.cpp
+	$(UVM_ML_CC) $(COMPILE_OPTIONS) -c -o $@ $<
+%$(BEXT).d: %.cpp
+	$(UVM_ML_CC) $(COMPILE_OPTIONS) -MM -MQ $(subst .d,.o,$@) -o $@ $<
+
+
+default: $(LIB_BUILD_DIR) $(TARGET_LIBRARY)
+
+$(LIB_BUILD_DIR):
+	mkdir -p $@
+
+$(TARGET_LIBRARY): $(OBJS) $(SV_ADAPTER_LIB) 
+	$(UVM_ML_LD) -shared -o $@ $(LINK_OPTIONS) $(OBJS) -Wl,--whole-archive $(SV_ADAPTER_LIB) -Wl,--no-whole-archive -L$(LIB_BUILD_DIR) -luvm_ml_bp -Xlinker -rpath -Xlinker $(LIB_BUILD_DIR) 
+clean:
+	\rm -f $(TARGET_LIBRARY) $(OBJS)
+ifneq ($(MAKECMDGOALS),clean)
+include $(DEPFILES)
+endif

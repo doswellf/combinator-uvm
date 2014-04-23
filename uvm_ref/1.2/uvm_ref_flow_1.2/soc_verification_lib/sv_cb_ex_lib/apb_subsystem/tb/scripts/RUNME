@@ -1,0 +1,31 @@
+#!/bin/sh -f
+
+test_name="lp_shutdown_urt1"
+
+usage() {
+   echo "                       [-test <test_name> ]"
+   echo "Available low power Tests                  "
+   echo "               :  lp_shutdown_urt1         "
+   echo "               :  apb_subsystem_lp_test    "
+}
+
+while [ $# -gt 0 ]; do
+   case `echo $1 | tr "[A-Z]" "[a-z]"` in
+      -h|-help)
+         usage
+         exit 1
+         ;;
+      -test)
+                        shift
+                        SV_TEST=$1; export SV_TEST
+                        test_name=${SV_TEST}
+                        echo $test_name
+                        ;;
+    esac
+    shift       
+done
+
+irun  -uvmhome `ncroot`/tools/uvm-1.1 -gui -covoverwrite -lps_stime 15000 -lps_verify -lps_logfile lps.log -lps_pmode  \
+     -lps_cpf ${SOCV_KIT_HOME}/soc_verification_lib/sv_cb_ex_lib/apb_subsystem/tb/scripts/testbench.cpf \
+     -f ${SOCV_KIT_HOME}/soc_verification_lib/sv_cb_ex_lib/apb_subsystem/tb/scripts/run_lp.f +UVM_TESTNAME=${test_name}
+

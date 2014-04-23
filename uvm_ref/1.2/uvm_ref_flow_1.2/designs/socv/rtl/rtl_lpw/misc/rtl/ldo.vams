@@ -1,0 +1,316 @@
+//File name   : ldo.v
+//Title       : 
+//Created     : 1999
+//Description : 
+//Notes       : 
+//----------------------------------------------------------------------
+//   Copyright 1999-2010 Cadence Design Systems, Inc.
+//   All Rights Reserved Worldwide
+//
+//   Licensed under the Apache License, Version 2.0 (the
+//   "License"); you may not use this file except in
+//   compliance with the License.  You may obtain a copy of
+//   the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in
+//   writing, software distributed under the License is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+//   CONDITIONS OF ANY KIND, either express or implied.  See
+//   the License for the specific language governing
+//   permissions and limitations under the License.
+//----------------------------------------------------------------------
+
+`include "constants.vams"
+`include "disciplines.vams"
+//`timescale 1ps/1ps
+
+module ldo(Vbat,go_v06, go_v08, go_v10, go_v12, Vdig, low_bat, dead_bat, pso, vb_pso, reset);
+  input  Vbat;
+  input  go_v06;
+  input  go_v08;
+  input  go_v10;
+  input  go_v12;
+  input  pso;
+  input reset;
+  output Vdig;
+  output low_bat;
+  output dead_bat;
+  output vb_pso;
+
+  wreal Vbat;
+  wreal Vdig;
+  real  V ;
+  integer i;
+  reg   low_bat;
+  reg   dead_bat;
+  wire  vb_psoi;
+  reg   vb_pso = 'b0;
+
+  // -----------------------------------------
+  // ---- Parameters ----
+  parameter v0  = 0.0;
+  parameter v06 = 0.6;
+  parameter v08 = 0.8;
+  parameter v10 = 1.0;
+  parameter v12 = 1.2;
+
+  parameter VnomDly = 0;
+  parameter VlbatDly = 0;
+  parameter VdeadbatDly = 0;
+  //parameter VTransDelay = 10000; // 10 ns
+  parameter VTransDelay = 1; // 10 ns
+  // -----------------------------------------
+
+
+  // ------------------------------------------
+  // ---- Parameters set from TB (Specman) ----
+  real Vnom_max = 3.6  ;
+  real Vnom_min = 2.8 ;
+  real VnomDist = 5.0 ;
+  wreal VnomMidrail = (Vnom_max + Vnom_min)/2;
+  real VnomDesOut = 3.2 ;
+  real VnomDesOut_i ;
+  wreal VnomDesOut_i2 ;
+
+  // ---- Parameters set from TB (Specman) ----
+  real Vlbat_max = 2.8 ;
+  real Vlbat_min = 2.0 ;
+  real VlbatDist = 1 ;
+  wreal VlbatMidrail = (Vlbat_max + Vlbat_min)/2;
+  real VlbatDesOut = 0.6 ;
+  real VlbatDesOut_i ;
+  wreal VlbatDesOut_i2 ;
+
+  // ---- Parameters set from TB (Specman) ----
+  real Vdeadbat_max = 2.0 ;
+  real Vdeadbat_min =  0 ;
+  real VdeadbatDist = 1 ;
+  wreal VdeadbatMidrail = (Vdeadbat_max + Vdeadbat_min)/2;
+  real VdeadbatDesOut = 0.6 ;
+  real VdeadbatDesOut_i ;
+  wreal VdeadbatDesOut_i2 ;
+
+  // ---- Parameters set from Specman ---
+  real AllowedPercentageOvershoot;  // percentage
+  real AllowedPercentageUndershoot; // percentage
+  real AllowedOvershootTime;        // time in ps
+  real AllowedUndershootTime;       // time in ps
+  // ------------------------------------------
+
+
+  // ------------------------------------------
+  // ---- internal variables ----
+  reg VnomTooHi;
+  reg VnomTooLo;
+  real tLastOvershoot = 0;
+  real tLastUndershoot = 0;
+  reg OvershootTimeandPercentageERROR;
+  reg UndershootTimeandPercentageERROR;
+  wire psoi, go_v06i,  go_v08i, go_v10i, go_v12i;
+  // ------------------------------------------
+
+
+  // ----------------------------------------------------
+  assign #VTransDelay psoi = pso;
+  assign #VTransDelay go_v06i = go_v06;
+  assign #VTransDelay go_v08i = go_v08;
+  assign #VTransDelay go_v10i = go_v10;
+  assign #VTransDelay go_v12i = go_v12;
+  // ----------------------------------------------------
+  always @(V) begin
+    case ({go_v06i, go_v08i, go_v10i, go_v12i, psoi})
+       5'b00000 : begin
+                     VnomTooHi = 'b0;
+                     VnomTooLo = 'b0;
+                   end
+
+       5'b10000 : begin
+                     VnomTooHi = ((V-v06) > AllowedPercentageOvershoot/100) ? 'b1 : 'b0;  
+                     VnomTooLo = ((v06-V) > AllowedPercentageUndershoot/100) ? 'b1 : 'b0;
+                   end
+
+       5'b01000 : begin
+                     VnomTooHi = ((V-v08) > AllowedPercentageOvershoot/100) ? 'b1 : 'b0;
+                     VnomTooLo = ((v08-V) > AllowedPercentageUndershoot/100) ? 'b1 : 'b0;
+                   end
+
+       5'b00100 : begin
+                     VnomTooHi = ((V-v10) > AllowedPercentageOvershoot/100) ? 'b1 : 'b0;
+                     VnomTooLo = ((v10-V) > AllowedPercentageUndershoot/100) ? 'b1 : 'b0;
+                   end
+
+       5'b00010 : begin
+                     VnomTooHi = ((V-v12) > AllowedPercentageOvershoot/100) ? 'b1 : 'b0;
+                     VnomTooLo = ((v12-V) > AllowedPercentageUndershoot/100) ? 'b1 : 'b0;
+                   end
+
+
+       5'b00001 : begin
+                     VnomTooHi = ((V-v0)  > AllowedPercentageOvershoot/100) ? 'b1 : 'b0;
+                     VnomTooLo = ((v0-V) > AllowedPercentageUndershoot/100) ? 'b1 : 'b0;
+                   end
+
+       default  : begin
+                     VnomTooHi = 'b0;
+                     VnomTooLo = 'b0;
+                  end
+    endcase
+  end // always()
+  // ----------------------------------------------------
+
+
+  // ----------------------------------------------------
+  always begin
+      @(posedge VnomTooHi);
+        tLastOvershoot = $time;
+      @(negedge VnomTooHi);
+        tLastOvershoot = 0;
+  end
+
+  // Why does this not work????
+  //assign OvershootTimeandPercentageERROR = (VnomTooHi & (($time-tLastOvershoot)>AllowedOvershootTime)) ? 'b1 : 'b0; 
+
+  always begin
+     if(VnomTooHi & (($time-tLastOvershoot)>AllowedOvershootTime)) begin
+        OvershootTimeandPercentageERROR = 'b1;
+     end else begin
+        OvershootTimeandPercentageERROR = 'b0;
+     end
+     #100;
+  end
+
+  always begin
+      @(posedge VnomTooLo);
+        tLastUndershoot = $time;
+      @(negedge VnomTooLo);
+        tLastUndershoot = 0;
+  end
+//  assign UndershootTimeandPercentageERROR = ((($abstime - tLastUndershoot) >= AllowedUndershootTime) & VnomTooLo) ? 'b1 : 'b0; 
+
+
+  always begin
+     if(VnomTooLo & (($time-tLastUndershoot)>AllowedUndershootTime)) begin
+        UndershootTimeandPercentageERROR = 'b1;
+     end else begin
+        UndershootTimeandPercentageERROR = 'b0;
+     end
+     #100;
+  end
+  // ----------------------------------------------------
+  assign vb_psoi = OvershootTimeandPercentageERROR | UndershootTimeandPercentageERROR;
+  
+  always @(posedge vb_psoi or posedge reset)
+   begin
+     if (reset) vb_pso <= 'b0;
+     else vb_pso <= 'b1;
+   end
+  // ----------------------------------------------------
+
+
+  // ----------------------------------------------------
+  always @ (go_v06, go_v08, go_v10, go_v12 ) begin
+    case ({go_v06, go_v08, go_v10, go_v12})
+       4'b0000 : 
+          begin
+            VnomDesOut_i     = VnomDesOut;
+            VlbatDesOut_i    = VlbatDesOut;
+            VdeadbatDesOut_i = VdeadbatDesOut;
+            $display("  ++>[LDO]<++ : Switching to Nominal Voltage = %f V, @t = %t ",VnomDesOut_i, $time);
+         end
+
+       4'b1000 : 
+          begin
+            VnomDesOut_i     = v06;
+            VlbatDesOut_i    = VlbatDesOut;
+            VdeadbatDesOut_i = VdeadbatDesOut;
+            $display("  ++>[LDO]<++ : Switching to Nominal Voltage = %f V, @t = %t ", v06, $time);
+         end
+
+       4'b0100 : 
+          begin
+            VnomDesOut_i     = v08;
+            VlbatDesOut_i    = VlbatDesOut;
+            VdeadbatDesOut_i = VdeadbatDesOut;
+            $display("  ++>[LDO]<++ : Switching to Nominal Voltage = %f V, @t = %t ", v08, $time);
+         end
+
+       4'b0010 : 
+          begin
+            VnomDesOut_i     = v10;
+            VlbatDesOut_i    = VlbatDesOut;
+            VdeadbatDesOut_i = VdeadbatDesOut;
+            $display("  ++>[LDO]<++ : Switching to Nominal Voltage = %f V, @t = %t ", v10, $time);
+         end
+
+       4'b0001 : 
+          begin
+            VnomDesOut_i     = v12;
+            VlbatDesOut_i    = VlbatDesOut;
+            VdeadbatDesOut_i = VdeadbatDesOut;
+            $display("  ++>[LDO]<++ : Switching to Nominal Voltage = %f V, @t = %t ", v12, $time);
+         end
+
+       default:
+          begin
+            VnomDesOut_i     = 0;
+            VlbatDesOut_i    = 0;
+            VdeadbatDesOut_i = 0;
+
+            // After reset
+            if ($time > 100 ) begin
+               $display("  ++>[LDO]<++ : Input Error!!!! @t = %t ", $time);
+               $display("  ++>[LDO]<++ : .... input go_v06 = %f ", go_v06);
+               $display("  ++>[LDO]<++ : .... input go_v08 = %f ", go_v08);
+               $display("  ++>[LDO]<++ : .... input go_v10 = %f ", go_v10);
+               $display("  ++>[LDO]<++ : .... input go_v12 = %f ", go_v12);
+               $display("  ++>[LDO]<++ : Normal opearting voltage output set to zero!!!!");
+            end // if
+          end 
+    endcase
+  end // always()
+  // -------------------------------------------
+  assign #VTransDelay VnomDesOut_i2     = (!psoi) ? VnomDesOut_i : 0;
+  assign #VTransDelay VlbatDesOut_i2    = (!psoi) ? VlbatDesOut_i : 0;
+  assign #VTransDelay VdeadbatDesOut_i2 = (!psoi) ? VdeadbatDesOut_i : 0;
+  // -------------------------------------------
+
+
+  // -------------------------------------------------------------------------
+  // ----------- Voltage Regulator -------------
+  always @(Vbat or VnomDesOut_i2) begin
+    low_bat =0;
+    dead_bat = 0;
+
+    if (Vbat >= Vnom_min && Vbat <= Vnom_max) begin 
+       if (Vbat >= VnomMidrail) begin
+          V = #VnomDly (((Vbat - VnomMidrail) * VnomDist/100) + VnomDesOut_i2);
+       end else begin
+          V = #VnomDly (((VnomMidrail - Vbat) * VnomDist/100) + VnomDesOut_i2);
+       end
+
+    end else if (Vbat >= Vlbat_min && Vbat < Vlbat_max) begin
+       low_bat = 1;
+
+       if (Vbat >= VlbatMidrail) begin
+          V = #VlbatDly (((Vbat - VlbatMidrail) * VlbatDist/100) + VlbatDesOut_i2);
+       end else begin
+          V = #VlbatDly (((VlbatMidrail - Vbat) * VlbatDist/100) + VlbatDesOut_i2);
+       end
+
+    end else if (Vbat > Vdeadbat_min && Vbat < Vdeadbat_max) begin
+       dead_bat = 1;
+
+       if (Vbat >= VdeadbatMidrail) begin
+          V = #VdeadbatDly (((Vbat - VdeadbatMidrail) * VdeadbatDist/100) + VdeadbatDesOut_i2);
+       end else begin
+          V = #VdeadbatDly (((VdeadbatMidrail - Vbat) * VdeadbatDist/100) + VdeadbatDesOut_i2);
+       end
+    end
+  end //  always()
+  // -------------------------------------------------------------------------
+  assign Vdig = V;
+  // -------------------------------------------------------------------------
+
+endmodule // ldo()

@@ -1,0 +1,83 @@
+<!--
+Example 9-2: UART Controller Line Control Register XML Description
+
+This is a simple example of the UART Controller Line Control Register.
+This file is incomplete.  Please see a simple example in ex9-3_ua_simple.xml
+or a complete example in uart_ctrl_reg.xml
+
+Also - see the auto-generated SV code in ex9-4_ua_lcr.sv
+-->
+<!-- LINE CONTROL REGISTER -->
+<spirit:register>
+	<spirit:name>ua_lcr</spirit:name>
+	<spirit:addressOffset>0x3</spirit:addressOffset>
+	<spirit:size>8</spirit:size>
+	<spirit:access>read-write</spirit:access>
+	<spirit:reset>
+		<spirit:value>0x03</spirit:value>
+		<spirit:mask>0xff</spirit:mask>
+	</spirit:reset>
+	<spirit:field>
+		<spirit:name>char_lngth</spirit:name>
+		<spirit:bitOffset>0</spirit:bitOffset>
+		<spirit:bitWidth>2</spirit:bitWidth>
+		<spirit:vendorExtensions>
+			<vendorExtensions:collect_coverage>cov_all</vendorExtensions:collect_coverage>
+		</spirit:vendorExtensions>
+	</spirit:field>
+	<spirit:field>
+		<spirit:name>num_stop_bits</spirit:name>
+		<spirit:bitOffset>2</spirit:bitOffset>
+		<spirit:bitWidth>1</spirit:bitWidth>
+		<spirit:vendorExtensions>
+			<vendorExtensions:collect_coverage>cov_all</vendorExtensions:collect_coverage>
+		</spirit:vendorExtensions>
+	</spirit:field>
+	<spirit:field>
+		<spirit:name>p_en</spirit:name>
+		<spirit:bitOffset>3</spirit:bitOffset>
+		<spirit:bitWidth>1</spirit:bitWidth>
+		<spirit:vendorExtensions>
+			<vendorExtensions:collect_coverage>cov_all</vendorExtensions:collect_coverage>
+		</spirit:vendorExtensions>
+	</spirit:field>
+	<spirit:field>
+		<spirit:name>parity_even</spirit:name>
+		<spirit:bitOffset>4</spirit:bitOffset>
+		<spirit:bitWidth>1</spirit:bitWidth>
+		<spirit:vendorExtensions>
+			<vendorExtensions:collect_coverage>cov_all</vendorExtensions:collect_coverage>
+		</spirit:vendorExtensions>
+	</spirit:field>
+	<spirit:field>
+		<spirit:name>parity_sticky</spirit:name>
+		<spirit:bitOffset>5</spirit:bitOffset>
+		<spirit:bitWidth>1</spirit:bitWidth>
+		<spirit:vendorExtensions>
+			<vendorExtensions:collect_coverage>cov_all</vendorExtensions:collect_coverage>
+		</spirit:vendorExtensions>
+	</spirit:field>
+	<spirit:field>
+		<spirit:name>break_ctrl</spirit:name>
+		<spirit:bitOffset>6</spirit:bitOffset>
+		<spirit:bitWidth>1</spirit:bitWidth>
+		<spirit:vendorExtensions>
+			<vendorExtensions:collect_coverage>cov_all</vendorExtensions:collect_coverage>
+		</spirit:vendorExtensions>
+	</spirit:field>
+	<spirit:field>
+		<spirit:name>div_latch_access</spirit:name>
+		<spirit:bitOffset>7</spirit:bitOffset>
+		<spirit:bitWidth>1</spirit:bitWidth>
+		<spirit:vendorExtensions>
+			<vendorExtensions:collect_coverage>cov_all</vendorExtensions:collect_coverage>
+		</spirit:vendorExtensions>
+	</spirit:field>
+	<spirit:vendorExtensions>
+		<vendorExtensions:type>ua_lcr_c</vendorExtensions:type>
+		<vendorExtensions:compare_mask>0xff</vendorExtensions:compare_mask>
+		<vendorExtensions:hdl_path>uart_regs.lcr</vendorExtensions:hdl_path>
+		<vendorExtensions:constraint>c_char_lngth { value.char_lngth != 2'b00; }</vendorExtensions:constraint>
+		<vendorExtensions:constraint>c_break_ctrl { value.break_ctrl == 1'b0; }</vendorExtensions:constraint>
+	</spirit:vendorExtensions>
+</spirit:register>

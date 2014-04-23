@@ -1,0 +1,216 @@
+# SimVision Command Script (Wed Aug 25 11:35:59 IST 2010)
+#
+# Version 09.20.s023
+#
+# You can restore this configuration with:
+#
+#     simvision -input simvision.svcf
+#
+
+
+#
+# Preferences
+#
+preferences set toolbar-SimControl-WatchList {
+  usual
+  hide set_break
+}
+preferences set toolbar-SimControl-SrcBrowser {
+  usual
+  show step_out
+}
+preferences set toolbar-UserTB2-SrcBrowser {
+  usual
+  add UserFrame0
+  shown 1
+  position -row 8 -pos 1 -anchor w
+  name {Embedded Software Trace}
+}
+preferences set user-toolbar-list {SrcBrowser {} WaveWindow {} WatchList {}}
+preferences set toolbar-OperatingMode-WaveWindow {
+  usual
+  position -pos 6
+  name OperatingMode
+}
+preferences set plugin-enable-groupscope 0
+preferences set plugin-enable-interleaveandcompare 0
+
+#
+# PPE data
+#
+array set dbNames ""
+set dbNames(realName1) [database require ncsim -search {
+	./ncsim.shm/ncsim.trn
+	/vobs/socv/src/soc_verification_lib/sv_cb_ex_lib/apb_subsystem/tmp/sim_lab/ncsim.shm/ncsim.trn
+}]
+set dbNames(realName2) [database require waves -search {
+	./waves.shm/waves.trn
+	/vobs/socv/src/soc_verification_lib/sv_cb_ex_lib/apb_subsystem/tmp/sim_lab/waves.shm/waves.trn
+}]
+
+#
+# Conditions
+#
+set expression {(((simulator::apb_subsystem_top.i_apb_subsystem.hwrite === 'b1) && (simulator::apb_subsystem_top.i_apb_subsystem.haddr === 'h00810000)) && (simulator::apb_subsystem_top.i_apb_subsystem.i_oc_uart0.regs.dl === 'h0001))}
+if {[catch {condition new -name  uart_data_lach -expr $expression}] != ""} {
+    condition set -using uart_data_lach -expr $expression
+}
+set expression {(((simulator::apb_subsystem_top.i_apb_subsystem.hwrite === 'b1) && (simulator::apb_subsystem_top.i_apb_subsystem.haddr === 'h00810000)) && (simulator::apb_subsystem_top.i_apb_subsystem.i_oc_uart0.regs.dl === 'h0001))}
+if {[catch {condition new -name  uart_data_latch -expr $expression}] != ""} {
+    condition set -using uart_data_latch -expr $expression
+}
+set expression {(((simulator::apb_subsystem_top.i_apb_subsystem.hwrite === 'b1) && (simulator::apb_subsystem_top.i_apb_subsystem.haddr === 'h00810000)) && (simulator::apb_subsystem_top.i_apb_subsystem.i_oc_uart0.regs.dl === 'h0001))}
+if {[catch {condition new -name  uart_divisor_latch -expr $expression}] != ""} {
+    condition set -using uart_divisor_latch -expr $expression
+}
+set expression {(((simulator::apb_subsystem_top.i_apb_subsystem.i_oc_uart1.regs.dl === 'h0001) && (simulator::apb_subsystem_top.i_apb_subsystem.haddr === 'h00880000)) && (simulator::apb_subsystem_top.i_apb_subsystem.hwrite === 'b1))}
+if {[catch {condition new -name  uart_divisor_reg -expr $expression}] != ""} {
+    condition set -using uart_divisor_reg -expr $expression
+}
+set expression {((simulator::apb_subsystem_top.i_apb_subsystem.i_oc_uart0.regs.dl === 'h0001) && (simulator::apb_subsystem_top.i_apb_subsystem.hwrite == 'b1))}
+if {[catch {condition new -name  uart_latch_reg -expr $expression}] != ""} {
+    condition set -using uart_latch_reg -expr $expression
+}
+set expression {((simulator::apb_subsystem_top.i_apb_subsystem.haddr === 'h00880003) && (simulator::apb_subsystem_top.i_apb_subsystem.hwrite === 'b1))}
+if {[catch {condition new -name  uart_lcr_reg -expr $expression}] != ""} {
+    condition set -using uart_lcr_reg -expr $expression
+}
+set expression {(((simulator::apb_subsystem_top.i_apb_subsystem.i_oc_uart1.regs.lcr === 'hA6) && (simulator::apb_subsystem_top.i_apb_subsystem.hwrite === 'b1)) && (simulator::apb_subsystem_top.i_apb_subsystem.haddr === 'h00880003))}
+if {[catch {condition new -name  uart_line_control_reg -expr $expression}] != ""} {
+    condition set -using uart_line_control_reg -expr $expression
+}
+
+#
+# Groups
+#
+catch {group new -name {AHB Interface writes} -overlay 0}
+catch {group new -name {Power Control Signals} -overlay 0}
+
+group using {AHB Interface writes}
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+    simulator::apb_subsystem_top.i_apb_subsystem.haddr \
+    simulator::apb_subsystem_top.i_apb_subsystem.hwdata \
+    simulator::apb_subsystem_top.i_apb_subsystem.hwrite \
+    uart_lcr_reg \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_oc_uart1.regs.lcr \
+    {Power Control Signals}
+
+group using {Power Control Signals}
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.isolate_urt \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.save_edge_urt \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.pwr1_off_urt \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.restore_edge_urt
+
+#
+# Cursors
+#
+set time 4150000000fs
+if {[catch {cursor new -name  TimeA -time $time}] != ""} {
+    cursor set -using TimeA -time $time
+}
+set time 262450000000fs
+if {[catch {cursor new -name  TimeB -time $time}] != ""} {
+    cursor set -using TimeB -time $time
+}
+cursor set -using TimeB -marching 1
+
+#
+# Mnemonic Maps
+#
+mmap new -reuse -name {Boolean as Logic} -radix %b -contents {
+{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}
+}
+mmap new -reuse -name {Example Map} -radix %x -contents {
+{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}
+}
+
+#
+# Design Browser windows
+#
+if {[catch {window new browser -name "Design Browser 1" -geometry 700x500+16+34}] != ""} {
+    window geometry "Design Browser 1" 700x500+16+34
+}
+window target "Design Browser 1" on
+browser using "Design Browser 1"
+browser set -scope  waves::apb_subsystem_top.i_apb_subsystem.i_oc_uart1.regs 
+browser yview see  waves::apb_subsystem_top.i_apb_subsystem.i_oc_uart1.regs 
+browser timecontrol set -lock 0
+
+#
+# Waveform windows
+#
+if {[catch {window new WaveWindow -name "Waveform 1" -geometry 1196x570+52+74}] != ""} {
+    window geometry "Waveform 1" 1196x570+52+74
+}
+window target "Waveform 1" on
+waveform using {Waveform 1}
+waveform sidebar visibility partial
+waveform set \
+    -primarycursor TimeA \
+    -signalnames name \
+    -signalwidth 175 \
+    -units ps \
+    -valuewidth 132
+cursor set -using TimeA -time 4,150,000,000fs
+waveform baseline set -time 0
+
+set id [waveform add -signals  {
+	waves::apb_subsystem_top.i_apb_subsystem.hclk
+	waves::apb_subsystem_top.i_apb_subsystem.n_hreset
+	} ]
+
+set groupId0 [waveform add -groups {{AHB Interface writes}}]
+
+set groupId1 [waveform find -name {Power Control Signals}]
+
+set gpGlist0 [waveform hierarchy contents $groupId0]
+set gpID0 [lindex $gpGlist0 0]
+foreach {name attrs}  {
+    {waves::apb_subsystem_top.i_apb_subsystem.haddr[31:0]} {}
+    {waves::apb_subsystem_top.i_apb_subsystem.hwdata[31:0]} {}
+    waves::apb_subsystem_top.i_apb_subsystem.hwrite {}
+    uart_lcr_reg {}
+    {waves::apb_subsystem_top.i_apb_subsystem.i_oc_uart1.regs.lcr[7:0]} {}
+    --
+ {-trace analogSampleAndHold}
+} {
+    set expected [ join [waveform signals -format fullpath $gpID0] ]
+    if {[string equal $name $expected]} {
+        if {$attrs != ""} {
+            eval waveform format $gpID0 $attrs
+        }
+    }
+    set gpGlist0 [lrange $gpGlist0 1 end]
+    set gpID0 [lindex $gpGlist0 0]
+}
+
+set id [waveform add -signals  {
+	waves::apb_subsystem_top.i_apb_subsystem.ua_txd1
+	waves::apb_subsystem_top.i_apb_subsystem.ua_rxd1
+	} ]
+
+waveform xview limits 0 262450000ps
+
+#
+# Waveform Window Links
+#
+
+#
+# Console windows
+#
+console set -windowname Console
+window geometry Console 1128x467+30+447
+

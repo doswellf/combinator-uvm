@@ -1,0 +1,85 @@
+# ----------------------------------------------------------------------
+#    Copyright 2012 Cadence Design Systems, Inc.
+#    All Rights Reserved Worldwide
+# 
+#    Licensed under the Apache License, Version 2.0 (the
+#    "License"); you may not use this file except in
+#    compliance with the License.  You may obtain a copy of
+#    the License at
+# 
+#        http://www.apache.org/licenses/LICENSE-2.0
+# 
+#    Unless required by applicable law or agreed to in
+#    writing, software distributed under the License is
+#    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#    CONDITIONS OF ANY KIND, either express or implied.  See
+#    the License for the specific language governing
+#    permissions and limitations under the License.
+# ----------------------------------------------------------------------
+
+ifndef UVM_ML_COMPILER_VERSION
+UVM_ML_COMPILER_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh)
+endif
+
+
+ifeq ($(BITS),64)
+BEXT=.${UVM_ML_COMPILER_VERSION}.64
+BIT_FLAGS = -fPIC
+64BIT_DIR=/64bit/
+else
+BEXT=.${UVM_ML_COMPILER_VERSION}
+BIT_FLAGS=-m32
+64BIT_DIR=/
+endif
+
+LD = $(UVM_ML_LD)
+
+LDOPTS = $(BIT_FLAGS)  -shared
+CFLAGS = $(BIT_FLAGS) -I$(UVM_ML_SVDPI_DIR) -I.
+
+
+TARGETS_lnx86 = libuvm_ml_bp.so
+
+BACKPLANE_OBJS = \
+	bp_utils$(BEXT).o \
+	bp_top_descriptor$(BEXT).o \
+	bp_connection$(BEXT).o \
+	bp_framework_proxy$(BEXT).o \
+	bp_type_map$(BEXT).o \
+	bp_base_interconnect$(BEXT).o \
+	bp_transaction_interconnect$(BEXT).o \
+	bp_provided$(BEXT).o \
+	bp_query_interconnect$(BEXT).o \
+	uvm_ml_phase_service$(BEXT).o \
+	common_services_framework$(BEXT).o \
+	bp_hierarchy$(BEXT).o
+
+DEPFILES = $(subst .o,.d,$(BACKPLANE_OBJS))
+
+LIB_NAME = $(TARGETS_$(ARCH))
+
+.PHONY: default
+
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/backplane/${UVM_ML_COMPILER_VERSION}$(64BIT_DIR)
+
+TARGET_LIB=$(LIB_BUILD_DIR)$(LIB_NAME)
+
+default : $(LIB_BUILD_DIR) $(TARGET_LIB)
+	@echo Backplane shared library has been built
+$(LIB_BUILD_DIR):
+	mkdir -p $@
+
+$(TARGET_LIB) : $(BACKPLANE_OBJS)
+	$(UVM_ML_LD) $(BACKPLANE_OBJS) $(LDOPTS) -o $@
+
+%$(BEXT).o: %.cpp
+	$(UVM_ML_CC) $(CFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+%$(BEXT).d: %.cpp
+	$(UVM_ML_CC) -MM -MQ $(subst .d,.o,$@) -o $@ $<
+.PHONY: clean
+clean: 
+	-rm -f $(BACKPLANE_OBJS) $(TARGET_LIB)
+
+ifneq ($(MAKECMDGOALS),clean) 
+include $(DEPFILES)
+endif

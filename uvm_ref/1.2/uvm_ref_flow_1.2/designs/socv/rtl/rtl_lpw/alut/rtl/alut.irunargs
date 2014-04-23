@@ -1,0 +1,7 @@
+-incdir ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/alut/rtl/
+
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/alut/rtl/alut_reg_bank.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/alut/rtl/alut_addr_checker.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/alut/rtl/alut_mem.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/alut/rtl/alut_age_checker.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/alut/rtl/alut.v

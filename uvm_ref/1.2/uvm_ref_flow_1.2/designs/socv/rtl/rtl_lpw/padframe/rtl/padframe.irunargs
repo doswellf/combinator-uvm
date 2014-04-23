@@ -1,0 +1,8 @@
+-incdir ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/gpio/rtl
+
+// ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/misc/rtl/tpzn65lpgv2.v
+pad_models.v
+dummy_analog_pad.v
+
+padframe.v
+lvds_beh.v

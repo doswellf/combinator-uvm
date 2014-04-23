@@ -1,0 +1,56 @@
+## 
+## -------------------------------------------------------------
+##    Copyright 2012 Cadence.
+##    All Rights Reserved Worldwide
+## 
+##    Licensed under the Apache License, Version 2.0 (the
+##    "License"); you may not use this file except in
+##    compliance with the License.  You may obtain a copy of
+##    the License at
+## 
+##        http://www.apache.org/licenses/LICENSE-2.0
+## 
+##    Unless required by applicable law or agreed to in
+##    writing, software distributed under the License is
+##    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+##    CONDITIONS OF ANY KIND, either express or implied.  See
+##    the License for the specific language governing
+##    permissions and limitations under the License.
+## -------------------------------------------------------------
+## 
+ifdef OSCI_INSTALL
+ifndef OSCI_VERSION
+OSCI_VERSION := $(shell ${UVM_ML_HOME}/ml/tools/get_osci_version.sh)
+endif
+else
+-include ${UVM_ML_HOME}/ml/tests/osci_version.mk
+endif
+export OSCI_VERSION
+
+ifeq ($(OSCI_VERSION),2.2)
+ifeq ($(TLM2_INSTALL),)
+ERROR_FLAG=1
+$(warning ** TLM2_INSTALL environment variable is not defined **)
+else
+TLM2_FLAGS=-I${TLM2_INSTALL}/include/tlm
+endif
+endif
+
+
+
+ALL_OSCI_LIB ?= liball_osci.64.so
+ALL_OSCI_DEP_FILE ?= $(subst .so,.d,$(ALL_OSCI_LIB))
+COMPILE_LIBALL_OSCI_OPTS=$(BIT_CFLAGS) $(EXTRA_LIBALL_OSCI_FLAGS) \
+-Xlinker -rpath -Xlinker ${UVM_ML_HOME}/ml/libs/osci/$(OSCI_VERSION)/${UVM_ML_COMPILER_VERSION}/$(SUBDIR)  -L${UVM_ML_HOME}/ml/libs/osci/$(OSCI_VERSION)/${UVM_ML_COMPILER_VERSION}/$(SUBDIR) \
+-luvm_sc_fw_osci -luvm_sc_ml_osci -shared \
+-I${OSCI_INSTALL}/include ${TLM2_FLAGS} -I$(UVM_ML_HOME)/ml/adapters/uvm_sc/  -I$(UVM_ML_HOME)/ml/adapters/uvm_sc/osci -I${UVM_ML_HOME}/ml/frameworks/uvm/sc
+
+$(ALL_OSCI_LIB): $(SYSC_FILES)
+	$(UVM_ML_LD) -g -fPIC -o $@ $(SYSC_FILES) $(COMPILE_LIBALL_OSCI_OPTS) 
+
+$(ALL_OSCI_DEP_FILE): $(SYSC_FILES)
+	$(UVM_ML_LD) -MM -MQ $@ -o $@ $(COMPILE_LIBALL_OSCI_OPTS) $(SYSC_FILES)
+
+ifneq ($(MAKECMDGOALS),clean)
+include $(ALL_OSCI_DEP_FILE)
+endif

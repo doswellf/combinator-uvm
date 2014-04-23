@@ -1,0 +1,29 @@
+-incdir ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/opencores/ethmac/rtl/
+-incdir ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/opencores/
+
+mac_veneer.v
+mac_pcm.v
+
+ethmac/rtl/eth_crc.v
+ethmac/rtl/eth_maccontrol.v
+ethmac/rtl/eth_macstatus.v
+ethmac/rtl/eth_miim.v
+ethmac/rtl/eth_outputcontrol.v
+ethmac/rtl/eth_random.v
+ethmac/rtl/eth_receivecontrol.v
+ethmac/rtl/eth_register.v
+ethmac/rtl/eth_registers.v
+ethmac/rtl/eth_rxcounters.v
+ethmac/rtl/eth_rxethmac.v
+ethmac/rtl/eth_rxstatem.v
+ethmac/rtl/eth_shiftreg.v
+ethmac/rtl/eth_top.v
+ethmac/rtl/eth_transmitcontrol.v
+ethmac/rtl/eth_txcounters.v
+ethmac/rtl/eth_txethmac.v
+ethmac/rtl/eth_txstatem.v
+ethmac/rtl/eth_clockgen.v
+ethmac/rtl/eth_spram_256x32.v
+ethmac/rtl/eth_wishbone.v
+ethmac/rtl/eth_fifo.v
+ethmac/rtl/eth_rxaddrcheck.v

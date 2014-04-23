@@ -1,0 +1,17 @@
+Path to registers:
+
+uart_tb_top.uart_dut.regs
+
+Offset  Function                      R/W Reset Value
+0x00	Receiver Buffer	               R   0x00
+0x00	Transmit Holding Register (THR) W   0x00
+0x01	Interrupt Enable	       R/W 0x00
+0x02	Interrupt Identification       R   0xC1
+0x02	FIFO Control	               WO  0xC0
+0x03	Line Control Register	       RW  0x03
+0x04	Modem Control	               WO  0x00
+0x05	Line Status	               RO  -
+0x06	Modem Status	               RO  -
+0x00	Divisor Latch Byte 1	       R/W -
+0x01	Divisor Latch Byte 2	       R/W -
+

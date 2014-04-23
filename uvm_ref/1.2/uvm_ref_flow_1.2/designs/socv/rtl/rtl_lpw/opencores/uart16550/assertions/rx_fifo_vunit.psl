@@ -1,0 +1,74 @@
+//----------------------------------------------------------------------
+//   Copyright 1999-2010 Cadence Design Systems, Inc.
+//   All Rights Reserved Worldwide
+//
+//   Licensed under the Apache License, Version 2.0 (the
+//   "License"); you may not use this file except in
+//   compliance with the License.  You may obtain a copy of
+//   the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in
+//   writing, software distributed under the License is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+//   CONDITIONS OF ANY KIND, either express or implied.  See
+//   the License for the specific language governing
+//   permissions and limitations under the License.
+//----------------------------------------------------------------------
+
+///////////  ########   uart rfifo prperty    #########  ///////////
+
+// UART rfifo
+
+vunit uart_rfifo_property(uart_rfifo) {
+
+
+`ifdef UART_ABV_ON
+
+
+default clocking DEFCLK  @(posedge clk);
+endclocking
+
+
+// assume if (count == 0) and pop(data read pulse) will be 0 
+input_pop_zero : assume property (
+      disable iff (wb_rst_i || fifo_reset )
+        ( (count == 0) && ~push ) |-> (~pop) );
+
+
+// overrun will not be high unless (count == fifo_depth)
+// psl core_never_overrun_when_count_not_fifo_depth : assert never 
+// ( (count < fifo_depth) && rose(overrun) );
+
+
+
+// When fifo is reset count should be zero
+output_count_zero : assert property ( @(posedge clk)
+      disable iff (wb_rst_i || fifo_reset )
+        ( wb_rst_i || fifo_reset ) |=> (count == 0) );
+
+// Fifo overrun condition
+output_overrun_high : assert property ( @(posedge clk)
+      disable iff (wb_rst_i || fifo_reset )
+        ( push && (count == fifo_depth)  &&  ~pop && ~reset_status) |=> (overrun) );
+
+// Fifo reset condition for overrun output
+output_overrun_low : assert property ( @(posedge clk)
+   ( wb_rst_i || fifo_reset || reset_status ) |=>
+   ( ~overrun) );
+
+
+// Assume that when overrun is high, "push" will be low
+// psl input_push : assume always
+// ( { overrun} |-> {~push} )
+// abort (wb_rst_i);
+
+// Cover Fifo empty to Fifo full
+// psl cover_fifo_empty_to_full : 
+//     cover {(count == 0); [*]; (count == fifo_depth) };
+
+
+`endif
+}
+

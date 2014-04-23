@@ -1,0 +1,233 @@
+# SimVision Command Script (Tue Feb 26 15:03:53 IST 2013)
+#
+# Version 12.20.s005
+#
+
+if {[file exists "restore.tcl.ecom"]} { console submit -using Specman "@restore.tcl.ecom" }
+
+#
+# Preferences
+#
+preferences set enable_approximation 0
+preferences set signal_to_display {testbench.top.or1200.or1200_cpu.or1200_genpc.pc[31:0]}
+preferences set toolbar-Standard-WatchWindow {
+  usual
+  shown 1
+}
+preferences set toolbar-SimControl-WatchList {
+  usual
+  hide set_break
+  position -anchor e
+}
+preferences set toolbar-SimControl-SrcBrowser {
+  usual
+  show step_out
+  show coverage
+  position -row 65 -pos 5
+}
+preferences set toolbar-txe_waveform_navigate-WaveWindow {
+  usual
+  shown 1
+}
+preferences set toolbar-SpecmanSrc-SrcBrowser {
+  usual
+  position -pos 2
+}
+preferences set toolbar-UserTB0-WatchList {
+  usual
+  add action_send_from_design_browser_to_stripechart
+  add action_send_from_design_browser_to_databrowser
+  add action_send_from_design_browser_to_visualization
+  shown 1
+  position -row 0 -pos 3 -anchor e
+  name {Send To Specman}
+}
+preferences set toolbar-TimeSearch-SrcBrowser {
+  usual
+  shown 0
+}
+preferences set plugin-enable-svdatabrowser-new 1
+preferences set cursorctl-dont-show-sync-warning 1
+preferences set toolbar-Windows-WatchWindow {
+  usual
+  shown 0
+}
+preferences set toolbar-SvDataBrowser-SrcBrowser {
+  usual
+  position -pos 7
+  name SvDataBrowser
+}
+preferences set approximation_distance 3
+preferences set toolbar-UserTB1-WaveWindow {
+  usual
+  add action_send_from_waveform_to_stripechart
+  add action_send_from_waveform_to_databrowser
+  shown 1
+  position -row 0 -pos 4 -anchor e
+  name {Send To Specman}
+}
+preferences set user-toolbar-list {SrcBrowser {} WatchList {} Console {} WaveWindow {}}
+preferences set toolbar-Uvm-WatchList {
+  usual
+  position -anchor w
+}
+preferences set enable_mix_trace 1
+preferences set enable_src_trace 1
+preferences set enable_dis_trace 1
+preferences set toolbar-Gdb-SrcBrowser {
+  usual
+  shown 0
+  position -row 0 -pos 1 -anchor {}
+  name Gdb
+}
+preferences set toolbar-Standard-Console {
+  usual
+  position -pos 1
+}
+preferences set toolbar-Standard-SrcBrowser {
+  usual
+  shown 0
+}
+preferences set approximation_resolution 4
+preferences set toolbar-SignalTrace-SrcBrowser {
+  usual
+  shown 0
+}
+preferences set toolbar-OperatingMode-WaveWindow {
+  usual
+  position -pos 5
+  name OperatingMode
+}
+preferences set elf_file c/main.elf
+preferences set toolbar-Search-Console {
+  usual
+  position -pos 2
+}
+preferences set plugin-enable-svdatabrowser 0
+preferences set gnu_prefix or32-elf
+preferences set toolbar-Windows-SrcBrowser {
+  usual
+  shown 0
+  position -pos 6
+}
+preferences set toolbar-Standard-WaveWindow {
+  usual
+  position -pos 1
+}
+preferences set plugin-enable-groupscope 0
+preferences set toolbar-txe_waveform_view-WaveWindow {
+  usual
+  shown 1
+}
+preferences set sb-callstack-in-window 0
+preferences set plugin-enable-interleaveandcompare 0
+preferences set toolbar-SimControl-WatchWindow {
+  usual
+  show coverage
+  shown 0
+}
+preferences set toolbar-Windows-WatchList {
+  usual
+  position -pos 2
+}
+preferences set toolbar-Edit-WatchWindow {
+  usual
+  shown 0
+}
+preferences set sb-callstack-size 2
+preferences set toolbar-TimeSearch-WatchWindow {
+  usual
+  shown 0
+}
+preferences set tool_mode GNU
+preferences set verbose 0
+
+#
+# Simulator
+#
+database require simulator -hints {
+	simulator "irun -f $UVM_ML_HOME/ml/tests/irun_uvm_ml.64.f -64bit -debug -g -uvmlinedebug ./test.sv ./top.e +UVM_NO_RELNOTES -nocopyright -access rw -uvmhome $UVM_ML_HOME/ml/frameworks/uvm/sv/uvm-1.1c -gui -DSC_INCLUDE_DYNAMIC_PROCESSES -sysc -tlm2 -I$UVM_ML_HOME/ml/adapters/uvm_sc -I$UVM_ML_HOME/ml/adapters/uvm_sc/common -I$UVM_ML_HOME/ml/adapters/uvm_sc/ncsc ./sc.cpp -ml_uvm -top topmodule -sctlmrecord -scregisterproberecordall on -input restore.tcl +mpssession+SPECMAN29835 -input temp.tcl"
+}
+
+#
+# Mnemonic Maps
+#
+mmap new -reuse -name {Boolean as Logic} -radix %b -contents {{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}}
+mmap new -reuse -name {Example Map} -radix %x -contents {{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}}
+mmap new -reuse -name Debug_Analyzer -radix %x -contents {{%x=* -bgcolor #999999 -linecolor #000000 -textcolor #000000}}
+
+#
+# Design Browser windows
+#
+if {[catch {window new WatchList -name "Design Browser 1" -geometry 750x500+5+49}] != ""} {
+    window geometry "Design Browser 1" 750x500+5+49
+}
+window target "Design Browser 1" on
+browser using {Design Browser 1}
+browser set -scope  simulator:: 
+browser set \
+    -signalsort name
+browser yview see  simulator:: 
+browser timecontrol set -lock 0
+
+#
+# Waveform windows
+#
+if {[catch {window new WaveWindow -name "Waveform 1" -geometry 1010x600+488+210}] != ""} {
+    window geometry "Waveform 1" 1010x600+488+210
+}
+window target "Waveform 1" on
+waveform using {Waveform 1}
+waveform sidebar visibility partial
+waveform set \
+    -primarycursor TimeA \
+    -signalnames name \
+    -signalwidth 175 \
+    -units ns \
+    -valuewidth 75
+waveform baseline set -time 0
+
+set id [waveform add -signals  {
+	simulator::sctop.sc_env.prod.b_isocket_SCTLMX
+	simulator::sctop.sc_env.prod.nb_isocket_SCTLMX
+	simulator::sctop.sc_env.cons_t_e_socket_tlm2_convertor.isocket_SCTLMX
+	simulator::sctop.sc_env.prod.sc_isocket_SCTLMX
+	simulator::sctop.sc_env.cons_tsocket_tlm2_convertor.isocket_SCTLMX
+	} ]
+
+waveform xview limits 0 500ns
+
+#
+# Waveform Window Links
+#
+
+#
+# Source Browser windows
+#
+if {[catch {window new SrcBrowser -name "Source Browser 1" -geometry 700x978+765+48}] != ""} {
+    window geometry "Source Browser 1" 700x978+765+48
+}
+window target "Source Browser 1" on
+srcbrowser using {Source Browser 1}
+srcbrowser set \
+    -primarycursor TimeA \
+    -units ns \
+    -radix default \
+    -showstrength 0 \
+    -showcallstack 0 \
+    -displayvalues 0
+
+srcbrowser open -file ./producer.sv
+
+srcbrowser sidebar visibility partial
+
+#
+# Console windows
+#
+console set -windowname Console
+window geometry Console 750x447+5+578
+

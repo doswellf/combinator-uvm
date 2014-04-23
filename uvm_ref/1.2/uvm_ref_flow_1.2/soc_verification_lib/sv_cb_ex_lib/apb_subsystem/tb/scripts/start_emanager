@@ -1,0 +1,61 @@
+#!/bin/sh -f
+
+#-------------------------------------------------------------------------
+# File name   : start_apb_ss_emanager
+# Title       :
+# Project     : APB Subsystem Level Verification
+# Created     :
+# Description : Simple start up script for Enterprise Manager
+# Notes       :
+#----------------------------------------------------------------------
+#   Copyright 1999-2010 Cadence Design Systems, Inc.
+#   All Rights Reserved Worldwide
+#
+#   Licensed under the Apache License, Version 2.0 (the
+#   "License"); you may not use this file except in
+#   compliance with the License.  You may obtain a copy of
+#   the License at
+#
+#       http://www.apache.org/licenses/LICENSE-2.0
+#
+#   Unless required by applicable law or agreed to in
+#   writing, software distributed under the License is
+#   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#   CONDITIONS OF ANY KIND, either express or implied.  See
+#   the License for the specific language governing
+#   permissions and limitations under the License.
+#----------------------------------------------------------------------
+
+# Check for regression area being set - compilation occurs here
+
+if [ -z "$MY_WORK_AREA" ]; then
+  MY_WORK_AREA=`pwd`; export MY_WORK_AREA
+  echo "MY_WORK_AREA set to $MY_WORK_AREA"
+else
+  echo "MY_WORK_AREA set to $MY_WORK_AREA previously"
+fi
+
+sve_top_package_dir=${SOCV_KIT_HOME}/soc_verification_lib/sv_cb_ex_lib/apb_subsystem
+
+# Create an emanager config file to ease directory navigation
+
+VMANAGER_CONFIG_HOME=$MY_WORK_AREA ; export VMANAGER_CONFIG_HOME
+
+if [ -d $VMANAGER_CONFIG_HOME/.vmanager ]; then
+  \rm -rf $VMANAGER_CONFIG_HOME/.vmanager
+fi
+
+mkdir -p $VMANAGER_CONFIG_HOME/.vmanager
+
+#alias appf 'echo \!* >> $VMANAGER_CONFIG_HOME/.vmanager/config'
+echo "vsif_dir:  ${sve_top_package_dir}/tb/vpm;" >> $VMANAGER_CONFIG_HOME/.vmanager/config
+echo "vsof_dir:  ${MY_WORK_AREA};" >> $VMANAGER_CONFIG_HOME/.vmanager/config
+echo "vplan_dir: ${sve_top_package_dir}/tb/vpm;" >> $VMANAGER_CONFIG_HOME/.vmanager/config
+echo "auto_read_vplan_extensions: Yes;" >> $VMANAGER_CONFIG_HOME/.vmanager/config
+echo "add_unique_buckets: TRUE;" >> $VMANAGER_CONFIG_HOME/.vmanager/config
+
+#---------------------------------------------------------------------------
+# Launch EManager: read in coverage models for code coverage
+#---------------------------------------------------------------------------
+
+emanager -p "setup;" 

@@ -1,0 +1,111 @@
+
+######################################################################################### 
+# set_cpf_version - Specifies the version of the format.
+# set_hierarchy_seperator - Specifies the hierarchy delimeter characterused in CPF file.
+# set_design - This command specifies the name of the module to which the power
+# information in the CPF file applies.
+######################################################################################### 
+set_cpf_version 1.1
+set_design smc -ports {restore_signal save_signal isolation_signal }
+set_hierarchy_separator "/"
+# set the variable for Library file.
+
+## SMC - Switchable @1.2V
+create_power_domain -name PDsmc_block 				\
+      -external_controlled_shutoff \
+      -default
+
+######################################################################################### 
+#  create_nominal_condition - Creates the normal operating condition with the 
+#  specified voltage.
+#  A power domain is switched off if it is associated with a nominal condition whose 
+#  voltage is 0.
+######################################################################################### 
+
+create_nominal_condition -name V1.2 -voltage 1.2 -state on
+create_nominal_condition -name V0.0 -voltage 0.0 -state off
+
+create_power_mode -name PMSmc_ON -default -domain_conditions  \
+ {PDsmc_block@V1.2}
+create_power_mode -name PMSmc_OFF -domain_conditions  \
+ {PDsmc_block@V0.0}
+
+#
+######################################################################################### 
+#
+#        DEFINE RULES FOR STATE RETENTION 
+#
+######################################################################################### 
+#  
+# create_state_retention_rule - Defines the rule for replacing selected
+# registers in the specified power domain.
+# -restore_edge -> It specifies the condition when the state of the 
+# register is need to be restored.
+# -save_edge -> it specifies the condition when the states of the 
+# registers needs to be saved.
+######################################################################################### 
+
+create_state_retention_rule   					\
+	-name SMC_retn_rule 					\
+	-instances i_apb		     	                \
+	-restore_level           {restore_signal}               \
+	-save_level           {save_signal}
+
+
+
+create_isolation_rule						\
+	-name iso_smc_low					\
+	-pins { prdata                        \
+                smc_hrdata                    \
+                smc_hresp                     \
+                smc_addr[0]                   \
+                smc_addr[1]                   \
+                smc_addr[2]                   \
+                smc_addr[3]                   \
+                smc_addr[4]                   \
+                smc_addr[5]                   \
+                smc_addr[6]                   \
+                smc_addr[7]                   \
+                smc_addr[8]                   \
+                smc_addr[9]                   \
+                smc_addr[10]                  \
+                smc_addr[11]                  \
+                smc_addr[12]                  \
+                smc_addr[13]                  \
+                smc_addr[14]                  \
+                smc_addr[15]                  \
+                smc_data                      \
+              }                                                 \
+	-isolation_condition {isolation_signal} 	        \
+	-isolation_output low 					\
+	-isolation_target from					\
+        -from PDsmc_block
+
+# Isolation rules (high) for smc
+create_isolation_rule						\
+	-name iso_smc_hi					\
+	-pins { smc_n_be                     \
+                smc_n_cs                     \
+                smc_n_we                     \
+                smc_n_wr                     \
+                smc_n_rd                     \
+                smc_n_ext_oe                 \
+                smc_hready                   \
+              }                                                 \
+	-isolation_condition {isolation_signal} 	\
+	-isolation_output high 					\
+	-isolation_target from					\
+        -from PDsmc_block
+
+
+#########################################################################################
+# update_isolation_rules - Appends the specified isolation rules with implementation
+# information.  
+#########################################################################################
+
+update_isolation_rules -names iso_smc_low -location to -cells iso_and
+update_isolation_rules -names iso_smc_hi -location to -cells iso_or
+
+
+
+end_design

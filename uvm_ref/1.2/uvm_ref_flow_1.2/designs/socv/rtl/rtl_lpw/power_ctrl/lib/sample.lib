@@ -1,0 +1,3643 @@
+/**************************************************************************
+ ***                   FAST(tm) Tutorial Library Source                 ***
+ **************************************************************************
+ *** Created By: Neil Hand                                              ***
+ *** Date      : Jan 06, 1999                                           ***
+ *** Version   : 1.0b Rev5                                              ***
+ **************************************************************************
+ *** Description: This library is intended for use in running the FAST  ***
+ *** tutorial. The numbers in this design are arbitrary and represent   ***
+ *** technology several generations past. The use of these numbers is   ***
+ *** to avoid comparisson against existing technology libraries.        ***
+ **************************************************************************
+ *** Revision History:                                                  ***
+ *** 1.0b Rev1 : First release                                          ***
+ *** 1.0b Rev2 : Removed RS flop that was causing fatals.               ***
+ *** 1.0b Rev3 : Corrected error in original RS flop and put back.      ***
+ *** 1.0b Rev4 : Scaled all Cap and Delay values to 10% or original to  ***
+ ***             prevent confussion with customers when looking at      ***
+ ***             Delay Values.                                          ***
+ *** 1.0b Rev5 : Added new op_cond, wire_loads, and wire_load_selection ***
+ **************************************************************************
+ ***                                                                    ***
+ *** 1.1  Rev1 : Added PSO cells      --- Christina Chu 12/20/2006      ***
+ *** 1.1  Rev2 : Added header cells   --- Christina Chu 03/28/2007      ***
+ *** 1.1  Rev3 : Added Scan and SRPG  --- Christina Chu 03/30/2007      ***
+ ***                                                                    ***
+ ***                                                                    ***
+ **************************************************************************/
+
+library (tutorial_pso_1.2) {
+   date     : "Sept 9, 1998";
+   revision : 1.0;
+   comment  : "Copyright 1998 Meropa Inc.";
+
+   delay_model                  : table_lookup;
+
+  power_supply() {
+        default_power_rail : VDD;
+        power_rail (VDDH, 1.20); /* high power */
+        power_rail (VDDL, 0.80); /* low power */
+        power_rail (VSS, 0.0);   /* primary ground */
+  }
+
+   simulation                   : false;
+   time_unit                    : "1ns";
+   voltage_unit                 : "1V";
+   current_unit                 : "1mA";
+   pulling_resistance_unit      : "1kohm";
+   capacitive_load_unit           (1, pf);
+
+   default_max_transition       : 4.500;
+   default_input_pin_cap        : 0.000;
+   default_output_pin_cap       : 0.000;
+   default_inout_pin_cap        : 0.030;
+
+
+   nom_process     : 1;
+   nom_temperature : 125;
+   nom_voltage     : 1.2;
+
+   operating_conditions (1p08) {
+      process     :  1.0;
+      temperature : 125.0;
+      voltage     :  1.2;
+      tree_type   : "balanced_tree";
+      power_rail (VDDH, 1.2); /* high power */
+      power_rail (VDDL, 0.8); /* low power */
+      power_rail (VSS, 0.0);   /* primary ground */
+   }
+ 
+   default_operating_conditions : 1p08 ;
+
+   wire_load("AL_SMALL") {
+       resistance : 0 ;
+       capacitance : 0.001 ;
+       area : 0 ;
+       slope : 0.18 ;
+       fanout_length(1,0.4) ;
+   }
+   wire_load("AL_MEDIUM") {
+       resistance : 0 ;
+       capacitance : 0.001 ;
+       area : 0 ;
+       slope : 0.20 ;
+       fanout_length(1,0.5) ;
+   }
+   wire_load("AL_LARGE") {
+       resistance : 0 ;
+       capacitance : 0.001 ;
+       area : 0 ;
+       slope : 0.30 ;
+       fanout_length(1,0.7) ;
+   }
+   
+   wire_load_selection(ALUMINUM) {
+       wire_load_from_area(0,100,"AL_SMALL") ;
+       wire_load_from_area(100,1000,"AL_MEDIUM") ;
+       wire_load_from_area(1000,10000,"AL_LARGE") ;
+   }
+
+   wire_load("CU_SMALL") {
+       resistance : 0 ;
+       capacitance : 0.0001 ;
+       area : 0 ;
+       slope : 0.018 ;
+       fanout_length(1,0.04) ;
+   }
+   wire_load("CU_MEDIUM") {
+       resistance : 0 ;
+       capacitance : 0.0001 ;
+       area : 0 ;
+       slope : 0.020 ;
+       fanout_length(1,0.05) ;
+   }
+   wire_load("CU_LARGE") {
+       resistance : 0 ;
+       capacitance : 0.0001 ;
+       area : 0 ;
+       slope : 0.030 ;
+       fanout_length(1,0.07) ;
+   }
+   wire_load_selection(COPPER) {
+       wire_load_from_area(0,100,"CU_SMALL") ;
+       wire_load_from_area(100,1000,"CU_MEDIUM") ;
+       wire_load_from_area(1000,10000,"CU_LARGE") ;
+   }
+
+   default_wire_load_selection : ALUMINUM;
+
+   lu_table_template(template1) {
+       variable_1 : input_net_transition;
+       variable_2 : total_output_net_capacitance;
+       index_1 ("0.06, 0.12, 0.26, 0.50");
+       index_2 ("0.03, 0.07, 0.12, 0.19");
+   }
+
+   lu_table_template(template2) {
+       variable_1 : input_net_transition;
+       variable_2 : total_output_net_capacitance;
+       index_1 ("0.06, 0.12, 0.26, 0.50");
+       index_2 ("0.05, 0.13, 0.26, 0.32");
+   }
+
+   cell (ls_lh_buf) {
+      area : 0.5;
+  rail_connection (VDD, VDDH);
+  rail_connection (VDDI, VDDL);
+      is_level_shifter : true;
+      pin(A) {
+         direction : input;
+         capacitance : 0.02;
+   input_signal_level : VDDL;
+
+      }
+      pin(Y) {
+         direction : output;
+    output_signal_level : VDDH;
+         function : A;
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            cell_rise(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+   cell (ls_hl_buf) {
+      area : 0.5;
+  rail_connection (VDD, VDDL);
+  rail_connection (VDDI, VDDH);
+      is_level_shifter : true;
+      pin(A) {
+         direction : input;
+         capacitance : 0.02;
+   input_signal_level : VDDH;
+
+      }
+      pin(Y) {
+         direction : output;
+    output_signal_level : VDDL;
+         function : A;
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            cell_rise(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+   cell (ls_lh) {
+      area : 1.0;
+        is_level_shifter : true;
+      pin(A) {
+         input_signal_level : VDDL;
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(EN) {
+    level_shifter_enable_pin : true;
+         direction   : input;
+         capacitance : 0.01;
+        input_signal_level : VDDH;
+      }
+      pin(Y) {
+         direction : output;
+    output_signal_level : VDDH;
+         function  : "A EN";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+         timing() {
+            related_pin : "EN";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+      }
+   }
+   cell (ls_hl) {
+      area : 1.0;
+        is_level_shifter : true;
+      pin(A) {
+         input_signal_level : VDDH;
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(EN) {
+    level_shifter_enable_pin : true;
+         direction   : input;
+         capacitance : 0.01;
+        input_signal_level : VDDH;
+      }
+      pin(Y) {
+         direction : output;
+    output_signal_level : VDDL;
+         function  : "A EN";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+         timing() {
+            related_pin : "EN";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+      }
+   }
+   cell (iso_and_inv_en) {
+      area : 1.0;
+        is_isolation_cell : true;
+      pin(A) {
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(EN) {
+    isolation_cell_enable_pin : true;
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(Y) {
+         direction : output;
+         function  : "A & !EN";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+         timing() {
+            related_pin : "EN";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+      }
+   }
+   cell (iso_and) {
+      area : 1.0;
+        is_isolation_cell : true;
+      pin(A) {
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(EN) {
+    isolation_cell_enable_pin : true;
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(Y) {
+         direction : output;
+         function  : "A EN";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+         timing() {
+            related_pin : "EN";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+      }
+   }
+
+ cell (iso_or) {
+      area : 1.0;
+        is_isolation_cell : true;
+      pin(A) {
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(EN) {
+    isolation_cell_enable_pin : true;
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(Y) {
+         direction : output;
+         function  : "A | EN";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+         timing() {
+            related_pin : "EN";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+      }
+   }
+
+
+   cell (nand2) {
+      area : 1.0;
+      pin(A) {
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(B) {
+         direction   : input;
+         capacitance : 0.01;
+      }
+      pin(Y) {
+         direction : output;
+         function  : "(A B)'";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+         timing() {
+            related_pin : "B";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.13, 0.14, 0.15, 0.16",  \
+                      "0.135,0.145,0.155,0.165", \
+                      "0.14, 0.15, 0.16, 0.17",  \
+                      "0.15, 0.16, 0.17, 0.18"   );
+            }
+            cell_rise(template1) { 
+               values("0.125, 0.135, 0.145, 0.155", \
+                      "0.130, 0.140, 0.150, 0.160", \
+                      "0.135, 0.145, 0.155, 0.165", \
+                      "0.145, 0.155, 0.165, 0.175"  );
+            }
+            fall_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+            rise_transition(template1) { 
+               values("0.05, 0.06, 0.07, 0.09",  \
+                      "0.052,0.062,0.078,0.098", \
+                      "0.054,0.065,0.083,0.120", \
+                      "0.056,0.068,0.088,0.140"  );
+            }
+         }
+      }
+   }
+
+   cell (nor2) {
+      area : 1.5;
+      pin(A) {
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(B) {
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Y) {
+         direction : output;
+         function : "(A + B)'";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.18, 0.19"   );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.18, 0.19"   );
+            }
+            fall_transition(template1) { 
+               values("0.06, 0.07, 0.08, 0.100", \
+                      "0.062,0.072,0.088,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+            rise_transition(template1) { 
+               values("0.06, 0.07, 0.08, 0.100", \
+                      "0.062,0.072,0.088,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+         }
+         timing() {
+            related_pin : "B";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.18, 0.19"   );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.18, 0.19"   );
+            }
+            fall_transition(template1) { 
+               values("0.06, 0.07, 0.08, 0.100", \
+                      "0.062,0.072,0.088,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+            rise_transition(template1) { 
+               values("0.06, 0.07, 0.08, 0.100", \
+                      "0.062,0.072,0.088,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+         }
+      }
+   }
+
+   cell (xor2) {
+      area : 2.0;
+      pin(A) {
+         direction : input;
+         capacitance : 0.015;
+      }
+      pin(B) {
+         direction : input;
+         capacitance : 0.015;
+      }
+      pin(Y) {
+         direction : output;
+         function : "A' B + A B'";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.16, 0.17, 0.18",  \
+                      "0.155,0.165,0.175,0.185", \
+                      "0.16, 0.17, 0.18, 0.19",  \
+                      "0.17, 0.18, 0.19, 0.20"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.16, 0.17, 0.18",  \
+                      "0.155,0.165,0.175,0.185", \
+                      "0.16, 0.17, 0.18, 0.19",  \
+                      "0.17, 0.18, 0.19, 0.20"   );
+            }
+            fall_transition(template1) { 
+               values("0.06, 0.07, 0.09, 0.10",  \
+                      "0.062,0.072,0.098,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+            rise_transition(template1) { 
+               values("0.06, 0.07, 0.09, 0.10",  \
+                      "0.062,0.072,0.098,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+         }
+         timing() {
+            related_pin : "B";
+            timing_type  : combinational;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.16, 0.17, 0.18",  \
+                      "0.155,0.165,0.175,0.185", \
+                      "0.16, 0.17, 0.18, 0.19",  \
+                      "0.17, 0.18, 0.19, 0.20"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.16, 0.17, 0.18",  \
+                      "0.155,0.165,0.175,0.185", \
+                      "0.16, 0.17, 0.18, 0.19",  \
+                      "0.17, 0.18, 0.19, 0.20"   );
+            }
+            fall_transition(template1) { 
+               values("0.06, 0.07, 0.09, 0.10",  \
+                      "0.062,0.072,0.098,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+            rise_transition(template1) { 
+               values("0.06, 0.07, 0.09, 0.10",  \
+                      "0.062,0.072,0.098,0.108", \
+                      "0.064,0.075,0.093,0.130", \
+                      "0.066,0.078,0.098,0.150"  );
+            }
+         }
+      }
+   }
+
+   cell (header) {
+      area : 55.5;
+      pin(SLEEP) {
+         direction : input;
+         capacitance : 0.02;
+      }
+      pin(SLEEPOUT) {
+         direction : output;
+         function : SLEEP;
+         timing() {
+            related_pin : "SLEEP";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            cell_rise(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+   cell (inv1) {
+      area : 0.5;
+      pin(A) {
+         direction : input;
+         capacitance : 0.02;
+      }
+      pin(Y) {
+         direction : output;
+         function : !A;
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            cell_rise(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+
+   cell (ivt1) {
+      area : 6.0;
+      pin(A) {
+         direction : input;
+         capacitance : 0.02;
+      }
+      pin(E) {
+         direction : input;
+         capacitance : 0.02;
+      }
+      pin(Y) {
+         direction : output;
+         function : "A'";
+         three_state : "E'";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            cell_rise(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "E";
+            timing_type  : three_state_disable;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            cell_rise(template1) { 
+               values("0.09, 0.10, 0.11, 0.12",  \
+                      "0.095,0.105,0.115,0.125", \
+                      "0.10, 0.11, 0.12, 0.13",  \
+                      "0.11, 0.12, 0.14, 0.16"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (always_on) {
+      area : 1.0;
+      pin(A) {
+         direction : input;
+         capacitance : 0.025;
+      }
+      pin(Y) {
+         direction : output;
+         function : "A";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.19, 0.20"   );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.19, 0.20"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+   cell (buf1) {
+      area : 1.0;
+      pin(A) {
+         direction : input;
+         capacitance : 0.025;
+      }
+      pin(Y) {
+         direction : output;
+         function : "A";
+         timing() {
+            related_pin : "A";
+            timing_type  : combinational;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.19, 0.20"   );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.16, 0.17",  \
+                      "0.145,0.155,0.165,0.175", \
+                      "0.15, 0.16, 0.17, 0.18",  \
+                      "0.16, 0.17, 0.19, 0.20"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (TLATNTSCAX2MTH) {
+      clock_gating_integrated_cell : "latch_posedge_precontrol";
+      area : 6;
+      pin(SE) {
+         direction : input;
+         clock_gate_test_pin : true;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(E) {
+         direction : input;
+         clock_gate_enable_pin : true;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+	 clock_gate_clock_pin : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+  statetable( "CK E SE", "ENL") {
+    table : "L L L : - : L,\
+             L L H : - : H,\
+             L H L : - : H,\
+             L H H : - : H,\
+             H - - : - : N";
+  }
+  pin(ENL) {
+    direction : internal;
+    internal_node : "ENL";
+  }
+
+
+      pin(ECK) {
+         direction : output;
+    state_function : "CK * ENL";
+    clock_gate_out_pin : true;
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+   cell (fflopd) {
+      area : 6;
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "D";
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (fflopd_srpg) {
+      power_gating_cell : "DRFF";
+      area : 6;
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "D & RETN";
+      }
+      pin(RETN) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (sfflopd) {
+      area : 16;
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "(SE SI) + (!SE D)";
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (sfflopd_srpg) {
+      power_gating_cell : "DRFF";
+      area : 6;
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "((SE SI) + (!SE D)) & RETN";
+      }
+      pin(RETN) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (sfflopd_ckn) {
+      area : 6;
+      ff("IQ", "IQN") {
+         clocked_on : "CKN'";
+         next_state : "(SE SI) + (!SE D)";
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CKN) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CKN";
+            timing_type  : falling_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (sfflopd_ckn_srpg) {
+      area : 6;
+      power_gating_cell : "DRFF";
+      ff("IQ", "IQN") {
+         clocked_on : "CKN'";
+         next_state : "(SE SI) + (!SE D) & RETN";
+      }
+      pin(RETN) {
+         direction : input;
+    	 power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CKN) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CKN";
+            timing_type  : falling_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (fflopd_ckn_srpg) {
+      area : 6;
+      power_gating_cell : "DRFF";
+      ff("IQ", "IQN") {
+         clocked_on : "CKN'";
+         next_state : "D & RETN";
+      }
+      pin(RETN) {
+         direction : input;
+    	 power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CKN) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CKN";
+            timing_type  : falling_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (flopdrs_srpg) {
+      area : 8.0;
+      power_gating_cell : "DRFF";
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "D & RETN";
+         clear      : "R'";
+         preset     : !S;
+         clear_preset_var1 : L;
+      }
+      pin(RETN) {
+         direction : input;
+    	 power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+
+   cell (sflopdrs) {
+      area : 8.0;
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "(SE SI) + (!SE D)";
+         clear      : "R'";
+         preset     : !S;
+         clear_preset_var1 : L;
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+   cell (sflopdrs_srpg) {
+      area : 8.0;
+      power_gating_cell : "DRFF";
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "((SE SI) + (!SE D)) & RETN";
+         clear      : "R'";
+         preset     : !S;
+         clear_preset_var1 : L;
+      }
+      pin(RETN) {
+         direction : input;
+    	 power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+
+   cell (flopdrs) {
+      area : 8.0;
+      ff("IQ", "IQN") {
+         clocked_on : "CK";
+         next_state : "D";
+         clear      : "R'";
+         preset     : !S;
+         clear_preset_var1 : L;
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CK) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CK";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CK";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+
+   cell (flopdrs_ckn) {
+      area : 8.0;
+      ff("IQ", "IQN") {
+         clocked_on : "CKN'";
+         next_state : "D";
+         clear      : "R'";
+         preset     : "S'";
+         clear_preset_var1 : L;
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CKN) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CKN";
+            timing_type  : falling_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+
+   cell (flopdrs_ckn_srpg) {
+      area : 8.0;
+      power_gating_cell : "DRFF";
+      ff("IQ", "IQN") {
+         clocked_on : "CKN'";
+         next_state : "D & RETN";
+         clear      : "R'";
+         preset     : "S'";
+         clear_preset_var1 : L;
+      }
+      pin(RETN) {
+         direction : input;
+    	 power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CKN) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CKN";
+            timing_type  : falling_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+
+   cell (sflopdrs_ckn) {
+      area : 8.0;
+      ff("IQ", "IQN") {
+         clocked_on : "CKN'";
+         next_state : "(SE SI) + (!SE D)";
+         clear      : "R'";
+         preset     : "S'";
+         clear_preset_var1 : L;
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CKN) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CKN";
+            timing_type  : falling_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+
+   cell (sflopdrs_ckn_srpg) {
+      area : 8.0;
+      power_gating_cell : "DRFF";
+      ff("IQ", "IQN") {
+         clocked_on : "CKN'";
+         next_state : "((SE SI) + (!SE D)) & RETN";
+         clear      : "R'";
+         preset     : "S'";
+         clear_preset_var1 : L;
+      }
+      pin(RETN) {
+         direction : input;
+    	 power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SAVE) {
+         direction : input;
+         power_gating_pin (power_pin_1, "1");
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CK";
+            timing_type  : hold_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CK";
+            timing_type  : setup_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SE) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(SI) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "CKN";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(CKN) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "CKN";
+            timing_type  : recovery_rising;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "CKN";
+            timing_type  : falling_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+      }
+   }
+   cell (latchd) {
+      area : 6;
+      latch("IQ", "IQN") {
+         enable     : "ENA";
+         data_in    : "D";
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "ENA";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "ENA";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(ENA) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "ENA";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "D";
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+
+   cell (latchdrs) {
+      area : 8.0;
+      latch("IQ", "IQN") {
+         enable     : "ENA";
+         data_in    : "D";
+         clear      : "R'";
+         preset     : "S'";
+         clear_preset_var1 : L;
+      }
+      pin(D) {
+         direction : input;
+         capacitance : 0.02;
+         timing() {
+            related_pin : "ENA";
+            timing_type  : hold_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+         timing() {
+            related_pin : "ENA";
+            timing_type  : setup_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.10");}
+            fall_constraint(scalar) { values("0.10");}
+         }
+      }
+      pin(ENA) {
+         clock : true;
+         direction : input;
+         capacitance : 0.01;
+      }
+      pin(R) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "ENA";
+            timing_type  : recovery_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(S) {
+         direction : input;
+         capacitance : 0.015;
+         timing() {
+            related_pin : "ENA";
+            timing_type  : recovery_falling;
+            timing_sense : non_unate;
+            rise_constraint(scalar) { values("0.08");}
+         }
+      }
+      pin(Q) {
+         direction : output;
+         function : "IQ";
+         timing() {
+            related_pin : "ENA";
+            timing_type  : rising_edge;
+            timing_sense : non_unate;
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+         timing() {
+            related_pin : "R";
+            timing_type  : clear;
+            timing_sense : positive_unate;
+            cell_fall(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.16, 0.16, 0.17, 0.19", \
+                      "0.18, 0.18, 0.18, 0.21", \
+                      "0.22, 0.22, 0.23, 0.25"  );
+            }
+            cell_rise(template1) { 
+               values("0.14, 0.15, 0.15, 0.18", \
+                      "0.14, 0.15, 0.15, 0.18", \
+                      "0.15, 0.15, 0.16, 0.19", \
+                      "0.14, 0.15, 0.15, 0.18"  );
+            }
+            fall_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+            rise_transition(template1) { 
+               values("0.070, 0.072, 0.074, 0.10", \
+                      "0.072, 0.074, 0.078, 0.12", \
+                      "0.074, 0.076, 0.082, 0.13", \
+                      "0.076, 0.086, 0.096, 0.14"  );
+            }
+         }
+         timing() {
+            related_pin : "S";
+            timing_type  : preset;
+            timing_sense : negative_unate;
+            cell_fall(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            cell_rise(template1) { 
+               values("0.18, 0.182, 0.19, 0.22", \
+                      "0.19, 0.193, 0.20, 0.23", \
+                      "0.21, 0.22,  0.21, 0.24", \
+                      "0.22, 0.23,  0.23, 0.26"  );
+            }
+            fall_transition(template1) { 
+               values("0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00", \
+                      "0.00, 0.00, 0.00, 0.00"  );
+            }
+            rise_transition(template1) { 
+               values("0.05,  0.052, 0.06,  0.10", \
+                      "0.052, 0.053, 0.061, 0.11", \
+                      "0.052, 0.053, 0.062, 0.11", \
+                      "0.053, 0.054, 0.063, 0.12"  );
+            }
+         }
+         timing() {
+            related_pin : "D";
+            cell_fall(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            cell_rise(template1) { 
+               values("0.15, 0.152,0.154,0.18",  \
+                      "0.152,0.154,0.166,0.186", \
+                      "0.154,0.156,0.168,0.188", \
+                      "0.148,0.149,0.152,0.17"   );
+            }
+            fall_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+            rise_transition(template1) { 
+               values("0.02, 0.03, 0.04, 0.05",  \
+                      "0.022,0.032,0.048,0.058", \
+                      "0.024,0.035,0.053,0.070", \
+                      "0.026,0.038,0.058,0.080"  );
+            }
+         }
+      }
+   }
+}

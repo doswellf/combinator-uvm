@@ -1,0 +1,63 @@
+# ----------------------------------------------------------------------
+#    Copyright 2012 Cadence Design Systems, Inc.
+#    All Rights Reserved Worldwide
+# 
+#    Licensed under the Apache License, Version 2.0 (the
+#    "License"); you may not use this file except in
+#    compliance with the License.  You may obtain a copy of
+#    the License at
+# 
+#        http://www.apache.org/licenses/LICENSE-2.0
+# 
+#    Unless required by applicable law or agreed to in
+#    writing, software distributed under the License is
+#    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#    CONDITIONS OF ANY KIND, either express or implied.  See
+#    the License for the specific language governing
+#    permissions and limitations under the License.
+# ----------------------------------------------------------------------
+
+ifndef UVM_ML_COMPILER_VERSION
+UVM_ML_COMPILER_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh $(UVM_ML_CC))
+endif
+
+LIB_NAME=$(TARGETS_$(ARCH))
+UVM_ML_E_NAME = sn_uvm_ml
+
+include $(IES_VERSION)/e_files.mk
+
+#
+UVM_ML_E_ADAPTER = $(IES_VERSION)/$(UVM_ML_E_NAME)_adapter.c
+UVM_ML_E_ADAPTER_HEADER = $(UVM_ML_E_NAME)_h.h
+TARGETS_lnx86 = $(UVM_ML_E_NAME)
+
+ifeq ($(BITS),64)
+64BIT_DIR=/64bit
+SN_BIT_FLAG=-64
+else
+64BIT_DIR=
+SN_BIT_FLAG=-32
+endif
+
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/uvm_e/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)${64BIT_DIR}
+TARGET_LIB = $(LIB_BUILD_DIR)/$(LIB_NAME)
+SN_TMP_DIR = $(LIB_BUILD_DIR)/sn_tmp_dir
+
+
+CFLAGS = -cflags -I$(UVM_ML_HOME)/ml/backplane 
+
+
+.PHONY: default
+default : $(LIB_BUILD_DIR) $(TARGET_LIB)
+$(LIB_BUILD_DIR):
+	mkdir -p $@
+
+$(TARGET_LIB) : $(UVM_ML_E_FILES) $(UVM_ML_E_ADAPTER) 
+	sn_compile.sh $^ -exe -shlib -t $(SN_TMP_DIR) -header $(UVM_ML_E_ADAPTER_HEADER) $(CFLAGS) -e $(LIB_BUILD_DIR) -o $(LIB_NAME) $(SN_BIT_FLAG) $(DEBUG_FLAGS)
+
+clean: 
+	-rm -rf  $(TARGET_LIB) $(UVM_ML_E_ADAPTER_HEADER) \
+	$(LIB_BUILD_DIR)/$(UVM_ML_E_NAME).ols $(LIB_BUILD_DIR)/$(UVM_ML_E_NAME).ols.old \
+	$(LIB_BUILD_DIR)/$(UVM_ML_E_NAME).esv $(SN_TMP_DIR) \
+	$(LIB_BUILD_DIR)/libsn_$(UVM_ML_E_NAME).so 
+

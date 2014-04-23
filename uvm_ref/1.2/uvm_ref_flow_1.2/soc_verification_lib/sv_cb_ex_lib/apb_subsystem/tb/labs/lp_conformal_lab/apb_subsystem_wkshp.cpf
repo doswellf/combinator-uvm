@@ -1,0 +1,329 @@
+#########################################################################################
+###
+# 
+# Script Name   : apb_subsystem.cpf
+# Usage         : This is the CPF 1.1 standard for the SoCV kit featuring
+#                 SMC and UART1 block having  PSO(Power Shut Off) and
+#                 SRPG(State Retention Power Gating) 
+# 
+# Date          : 24/04/2008
+# Version       : 1.1
+#
+#########################################################################################
+
+
+
+######################################################################################### 
+# set_design - This command specifies the name of the module to which the power
+# information in the CPF file applies.
+# set_cpf_version - Specifies the version of the format.
+# set_hierarchy_seperator - Specifies the hierarchy delimeter characterused in CPF file.
+######################################################################################### 
+
+set_design apb_subsystem_0
+set_cpf_version 1.1
+set_hierarchy_separator "/"
+
+# set the variable for Library file.
+set  LIB_CPF_PATH $env(SOCV_KIT_HOME)
+
+######################################################################################### 
+# create_ground_nets - Specifies the ground net.The net VSS as a global
+# ground net
+# create_power_nets - Specifies the power net. The net VDD is the power net
+# with voltage of 1.0 and 1.2 and feeds UART and Core blocks. The net VDD_SMC
+# is the power net with voltage 1.2v and feeds SMC block
+######################################################################################### 
+
+create_power_nets -nets VDD -voltage {1.0:1.2:0.2} -peak_ir_drop_limit 0 \
+    -average_ir_drop_limit 0
+
+create_power_nets -nets VDD_SMC -voltage 1.2 -peak_ir_drop_limit 0 \
+    -average_ir_drop_limit 0
+
+create_ground_nets -nets VSS -peak_ir_drop_limit 0 -average_ir_drop_limit 0
+
+######################################################################################### 
+#  create_nominal_condition - Creates the normal operating condition with the 
+#  specified voltage.
+#  A power domain is switched off if it is associated with a nominal condition whose 
+#  voltage is 0.
+######################################################################################### 
+
+create_nominal_condition -name V1.2 -voltage 1.2 -state on
+create_nominal_condition -name V1.0 -voltage 1.0 -state on
+create_nominal_condition -name V0.0 -voltage 0.0 -state off
+
+
+
+######################################################################################### 
+# 
+#             CREATE POWER DOMAINS
+#
+######################################################################################### 
+#  create_power_domain - This command creates the power domain and 
+#  specifies the instance and boundary ports that belongs to this domain.
+#  At least one power domain must be define for a design.
+#  One and only one power domain must be defined as the default power 
+#  domain 
+#  In apb_subsystem   PDcore  - default power domain
+#                     PDsmc   - Switchable power domain for SMC.
+#                     PDurt   - Switchable power domain for UART0
+#
+######################################################################################### 
+
+create_power_domain -name PDcore  -default               \
+        -active_state_conditions { V1.2@i_power_ctrl_veneer/i_power_ctrl/ase_core_12v \
+                                   V1.0@i_power_ctrl_veneer/i_power_ctrl/ase_core_10v }
+
+## SMC  - Switchable @1.2V
+create_power_domain -name PDsmc                                 \
+        -instances i_smc_veneer/i_smc_lite                           \
+        -shutoff_condition {i_power_ctrl_veneer/i_power_ctrl/pwr1_off_smc} \
+        -active_state_conditions { V1.2@i_power_ctrl_veneer/i_power_ctrl/ase_smc_12v  } \
+        -base_domains {PDcore}
+
+## UART1 - Switchable @1.2V and 1.0V
+create_power_domain -name PDurt                                 \
+        -instances i_oc_uart1 \
+        -shutoff_condition {i_power_ctrl_veneer/i_power_ctrl/pwr1_off_urt} \
+        -active_state_conditions { V1.2@i_power_ctrl_veneer/i_power_ctrl/ase_uart_12v \
+                                   V1.0@i_power_ctrl_veneer/i_power_ctrl/ase_uart_10v } \
+        -base_domains {PDcore}
+
+######################################################################################### 
+#  update_power_domain - Specifies the implementation aspects of the 
+#  specified power domain.
+#  The main ground(VSS) and power(VDD) net are given for all functional
+#  gates in the specified  power domain.
+######################################################################################### 
+
+update_power_domain -name PDsmc                                 \
+        -primary_power_net VDD_SMC                                 \
+        -primary_ground_net VSS -transition_slope 0.02
+
+update_power_domain -name PDurt                                 \
+        -primary_power_net VDD                                 \
+        -primary_ground_net VSS -transition_slope 0.02
+
+
+update_power_domain -name PDcore                                 \
+        -primary_power_net VDD                                 \
+        -primary_ground_net VSS -transition_slope 0.02
+
+        
+######################################################################################### 
+#             
+#              CREATE POWER MODE 
+#
+######################################################################################### 
+#  create_power_mode - define the power mode.If the design has more that one power domain
+#  then at least one power mode nust be define.
+#  In abp_subsystem level design , three power domains are present - PDcore,PDsmc and 
+#  PDurt.Based on this domain  , Four power modes are created.The below table shows the 
+#  voltage  for each power domain in each  of the mode
+#
+#  *****************************************************************************
+#               *                     POWER DOMAIN                             *
+#  POWER MODE   *                                                              *
+#               ****************************************************************
+#               *   PDcore             *    PDsmc         *    PDurt           *                                           
+#               *                      *                  *                    * 
+#  *****************************************************************************
+#               *                      *                  *                    *
+#   PM_Default  *   1.2V               *    1.2V          *    1.2V            *
+#  *****************************************************************************
+#               *                      *                  *                    *
+#   PM_smc      *   1.0V               *    0.0V          *    1.0V            *
+#  *****************************************************************************
+#               *                      *                  *                    *
+#   PM_uart     *   1.2V               *    1.2V          *    0.0V            *
+#  *****************************************************************************
+#               *                      *                  *                    *
+#   PM_smc_uart *   1.0V               *    0.0V          *    0.0V            * 
+#  *****************************************************************************
+#
+#
+######################################################################################### 
+
+
+create_power_mode -name PM_Default -default -domain_conditions  \
+ {PDcore@V1.2 PDsmc@V1.2 PDurt@V1.2}
+create_power_mode -name PM_smc -domain_conditions               \
+ {PDcore@V1.0 PDsmc@V0.0 PDurt@V1.0}
+create_power_mode -name PM_uart -domain_conditions              \
+ {PDcore@V0.0 PDsmc@V1.2 PDurt@V0.0}
+create_power_mode -name PM_smc_uart -domain_conditions          \
+ {PDcore@V1.0 PDsmc@V0.0 PDurt@V0.0}
+
+
+## create mode transition
+create_mode_transition -name PM_Default_PM_smc -from_mode PM_Default -to_mode PM_smc \
+    -start_condition i_power_ctrl_veneer/i_power_ctrl/mte_smc_start 
+
+create_mode_transition -name PM_Default_PM_uart -from_mode PM_Default -to_mode PM_uart \
+    -start_condition i_power_ctrl_veneer/i_power_ctrl/mte_uart_start 
+
+
+create_mode_transition -name PM_Default_PM_smc_uart -from_mode PM_Default -to_mode PM_smc_uart \
+    -start_condition i_power_ctrl_veneer/i_power_ctrl/mte_smc_uart_start 
+
+create_mode_transition -name PM_smc_PM_Default  -from_mode PM_smc -to_mode PM_Default \
+    -start_condition i_power_ctrl_veneer/i_power_ctrl/mte_pm_smc_to_default_start 
+
+create_mode_transition -name PM_uart_PM_Default  -from_mode PM_uart -to_mode PM_Default \
+    -start_condition i_power_ctrl_veneer/i_power_ctrl/mte_pm_uart_to_default_start 
+
+create_mode_transition -name PM_smc_uart_PM_Default  -from_mode PM_smc_uart -to_mode PM_Default \
+    -start_condition i_power_ctrl_veneer/i_power_ctrl/mte_pm_smc_uart_to_default_start 
+
+
+
+##
+######################################################################################### 
+#
+#        DEFINE RULES FOR STATE RETENTION 
+#
+######################################################################################### 
+#  
+# create_state_retention_rule - Defines the rule for replacing selected
+# registers in the specified power domain.
+# -restore_level -> It specifies the condition when the state of the 
+# register is need to be restored.
+# -save_level -> it specifies the condition when the states of the 
+# registers needs to be saved.
+######################################################################################### 
+
+create_state_retention_rule                                     \
+        -name SMC_retn_rule                                     \
+        -instances i_smc_veneer/i_smc_lite                      \
+        -restore_level           {i_power_ctrl_veneer/i_power_ctrl/restore_edge_smc}    \
+        -save_level             {i_power_ctrl_veneer/i_power_ctrl/save_edge_smc}        
+
+set uart_srpg_list {    i_oc_uart1/wb_interface     \
+                        i_oc_uart1/regs/transmitter     \
+                        i_oc_uart1/regs/receiver     \
+                   }                                    
+
+
+create_state_retention_rule                                     \
+        -name URT_retn_rule                                     \
+        -instances $uart_srpg_list                              \
+        -restore_level  {i_power_ctrl_veneer/i_power_ctrl/restore_edge_urt}    \
+        -save_level     {i_power_ctrl_veneer/i_power_ctrl/save_edge_urt}        
+
+
+#########################################################################################
+#
+#        DEFINE RULES FOR ISOLATION 
+#
+#########################################################################################
+#
+#  create_isolation_rule - Defines the rule for adding isolation cells.The command allows
+#  which -pins must be isolated.
+#  Option used with  this command:
+#  -isolation_condition -> The condition when the specified pins should be isolated.  
+#  -isolation_output    -> Control the output value at the output of the isolation gates
+#                           when the isolation condition is true. 
+#  -isolation_target    -> when the power domain of the drivers of the specified pins is 
+#                          switched off.          
+#########################################################################################
+
+set smc_low_pin_list { i_smc_veneer/i_smc_lite/prdata                        \
+                       i_smc_veneer/i_smc_lite/smc_hrdata                    \
+                       i_smc_veneer/i_smc_lite/smc_hresp                     \
+                       i_smc_veneer/i_smc_lite/smc_addr[0]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[1]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[2]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[3]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[4]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[5]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[6]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[7]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[8]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[9]                   \
+                       i_smc_veneer/i_smc_lite/smc_addr[10]                  \
+                       i_smc_veneer/i_smc_lite/smc_addr[11]                  \
+                       i_smc_veneer/i_smc_lite/smc_addr[12]                  \
+                       i_smc_veneer/i_smc_lite/smc_addr[13]                  \
+                       i_smc_veneer/i_smc_lite/smc_addr[14]                  \
+                       i_smc_veneer/i_smc_lite/smc_addr[15]                  \
+                       i_smc_veneer/i_smc_lite/smc_data                      \
+                     }                                                 
+
+# Isolation rules (low) for smc
+create_isolation_rule                                           \
+        -name iso_smc_low                                       \
+        -pins $smc_low_pin_list                                 \
+        -isolation_condition {i_power_ctrl_veneer/i_power_ctrl/isolate_snc}     \
+        -isolation_output low                                   \
+        -isolation_target from                                  \
+        -from PDsmc                                             
+
+set smc_high_pin_list { i_smc_veneer/i_smc_lite/smc_n_be                     \
+                       i_smc_veneer/i_smc_lite/smc_n_cs                     \
+                       i_smc_veneer/i_smc_lite/smc_n_we                     \
+                       i_smc_veneer/i_smc_lite/smc_n_wr                     \
+                       i_smc_veneer/i_smc_lite/smc_n_rd                     \
+                       i_smc_veneer/i_smc_lite/smc_n_ext_oe                 \
+                       i_smc_veneer/i_smc_lite/smc_hready                   \
+                     }
+# Isolation rules (high) for smc
+create_isolation_rule                                           \
+        -name iso_smc_hi                                        \
+        -pins $smc_high_pin_list                                \
+        -isolation_condition {i_power_ctrl_veneer/i_power_ctrl/isolate_smc}     \
+        -isolation_output high                                  \
+        -isolation_target from                                  \
+        -from PDsmc                                             
+
+# Isolation rule (low) for uart
+create_isolation_rule                                           \
+        -name iso_urt_lo                                        \
+        -pins { i_oc_uart1/wb_dat_o                   \
+                i_oc_uart1/wb_ack_o                  \
+                i_oc_uart1/int_o                   \
+              }                                                 \
+        -isolation_condition {i_power_ctrl_veneer/i_power_ctrl/isolate_urt}     \
+        -isolation_output low                                   \
+        -isolation_target from                                  \
+        -from PDurt
+
+# Isolation rule (high) for uart
+create_isolation_rule                                           \
+        -name iso_urt_hi                                        \
+        -pins { i_oc_uart1/rts_pad_o                  \
+                i_oc_uart1/stx_pad_o                   \
+              }                                                 \
+        -isolation_condition {i_power_ctrl_veneer/i_power_ctrl/isolate_urt}     \
+        -isolation_output high                                  \
+        -isolation_target from                                  \
+        -from PDurt
+
+#########################################################################################
+#Assertions  control rule for PCM module .This will disable the assertions  during the 
+#power down.
+#########################################################################################
+create_assertion_control -name ASC_SMC -domains {PDsmc} -shutoff_condition {i_power_ctrl_veneer/i_power_ctrl/isolate_smc} -type reset
+create_assertion_control -name ASC_UART -domains {PDurt} -shutoff_condition {i_power_ctrl_veneer/i_power_ctrl/isolate_urt} -type reset 
+
+
+#########################################################################################
+# update_isolation_rules - Appends the specified isolation rules with implementation
+# information.  
+#########################################################################################
+
+update_isolation_rules -names iso_smc_low -location to -cells iso_and
+update_isolation_rules -names iso_smc_hi -location to -cells iso_or
+
+update_isolation_rules -names iso_urt_lo -location to -cells iso_and
+update_isolation_rules -names iso_urt_hi -location to -cells iso_or
+
+#########################################################################################
+#  lib_chip.cpf -  This file contains the library information for the 
+# implementation.
+#########################################################################################
+source $LIB_CPF_PATH/designs/socv/rtl/rtl_lpw/apb_subsystem/cpf/lib_chip.cpf
+
+
+end_design

@@ -1,0 +1,43 @@
+// IGNORE THESE IF YOU ARE SYNTHESISING OR RUNNING LEC
+// ----------------------------------------------------
+// PLL model BB
+
+// VCO
+//$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/misc/rtl/vco.vams
+
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/misc/rtl/generic_sram_bit.v
+
+//for all memory wrappers
+
+//Design files
+socv.v
+
+//for padframe
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/padframe/rtl/padframe.irunargs
+
+// for the bus matrix
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/socv/rtl/cdn_busmatrix.irunargs
+
+//for rom_subsystem
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/rom_subsystem/rtl/rom_subsystem.irunargs
+
+//for sram_subsystem
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/sram_subsystem/rtl/sram_subsystem.irunargs
+
+//for APB subsystem
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/apb_subsystem/rtl/apb_subsystem.irunargs
+
+//for DMA
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/dma/rtl/dma.irunargs
+
+//for opencores ethernet
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/opencores/mac.irunargs
+
+//${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/misc/rtl/generic_dpsram.v
+
+//AHB2OCP bridge
+-incdir ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_chip/rtl
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_chip/rtl/ahb2ocp.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_chip/rtl/ahb2ocp_ram.v
+
+

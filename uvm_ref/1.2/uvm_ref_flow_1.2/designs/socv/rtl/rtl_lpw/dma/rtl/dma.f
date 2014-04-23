@@ -1,0 +1,12 @@
+dma_defs.v
+dma.v
+dma_ahb_config.v
+dma_int_control.v
+dma_ahb_master.v
+dma_ahb_mux.v
+dma_apb_mux.v
+dma_arbiter.v
+dma_channel.v
+dma_flow_mux.v
+dma_rx_sm.v
+dma_tx_sm.v

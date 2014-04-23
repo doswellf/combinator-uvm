@@ -1,0 +1,24 @@
+A Practical Guide to Adopting the Universal Verification Methodology (UVM)
+--------------------------------------------------------------------------
+Chapter 9: Register and Memory Package
+--------------------------------------------------------------------------
+==============================================================================
+
+For this set of examples, you will need to set one environment variable:
+
+  %  setenv IREG_GEN  $INSTALL_DIR/tools/methodology/iregGen
+
+Most of these example files are part of the larger UART Controller testbench.
+These files and a complete running example can be found in the uart_ctrl
+directory structure: ${UVM_REF_HOME}/soc_verification_lib/sv_cb_ex_lib/uart_ctrl/sv
+
+
+
+To run the XML examples: (ex9-2 and uart_ctrl_regs.xml), 
+
+  % $IREG_GEN/bin/iregGen -i uart_ctrl_regs.xml
+
+For all options, use the following:
+
+  %  $IREG_GEN/bin/iregGen -help
+=============================================================================

@@ -1,0 +1,6 @@
+-define FV_KIT_LP_COVERAGE
+-define FV_KIT_NO_AHB_UVC
+-define FV_KIT_NO_APB_UVC
+-define FV_KIT_OR1K
+-define SYSTEM_BIG_ENDIAN
+-define AHB_BIG_ENDIAN

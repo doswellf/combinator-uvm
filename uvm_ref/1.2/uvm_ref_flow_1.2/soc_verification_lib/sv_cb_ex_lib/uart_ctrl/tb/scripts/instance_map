@@ -1,0 +1,15 @@
+logical_instance UART_AGENT {
+ instance_path : "uvm_pkg.uvm_test_top.uart_ctrl_tb0.uart0";
+}
+
+logical_instance APB_BUS_MONITOR {
+  instance_path : "uvm_pkg.uvm_test_top.uart_ctrl_tb0.apb0";
+}
+
+logical_instance UART_APB_MONITOR {
+  instance_path : "uvm_pkg.uvm_test_top.uart_ctrl_tb0.uart_ctrl0";
+}
+
+logical_instance UART_DUT {
+ instance_path : "uart_ctrl_top.uart_dut.regs";
+}

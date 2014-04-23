@@ -1,0 +1,224 @@
+UVM_ML 1.3 Release Notes
+========================
+
+November 10th, 2013
+
+
+General Overview
+----------------
+
+Universal Verification Methodology Multi-Language (UVM-ML) provides a 
+modular solution for integrating verification components written in 
+different languages into a unified and coordinated verification 
+environment. It consists of an open source library that enables such 
+integrations, and can be extended to support additional languages and 
+methodologies. 
+ 
+This release of the UVM-ML implementation is the result of collaboration 
+work between Advance Micro Devices, Inc., and Cadence Design Systems, Inc. 
+It expands on the mature technology provided by Cadence in Incisive and in 
+previous UVM-ML postings on UVMWorld. It is provided as open source under 
+the Apache 2.0 license, and is referred to as UVM-ML Open Architecture 
+(UVM-ML-OA).
+
+This package is simulator independent, runs on multiple simulators, and is 
+intended to serve as a basis for the verification community to 
+collaboratively expand and evolve the multi-language verification 
+methodology. It is currently available for early access and should not be 
+considered complete. 
+
+This distribution includes the following main elements
+- Backplane implementation
+- Frameworks and adapters (3 FWs supported now: UVM-SV, UVM-e, and UVM-SC)
+- A few demos (showing all FWs interacting) and a few smaller test examples 
+- Docs directory with a Quick-Start, User Guides, and reference HTML docs
+
+
+Where to Find Information
+-------------------------
+
+Point your HTML browser to the landing page ml/README.html. It gives a 
+hyperlinked list of all relevant material and suggests where to start 
+reading from.
+
+If you want to install the package without using the HTML browser you can 
+open ml/README_INSTALLATION.txt and follow directions there. The required 
+tools and supported version numbers are listed there too.
+
+For feedback or questions: send email to support_uvm_ml@cadence.com
+
+
+What's New
+----------
+This release has significant enhancements over the earlier 1.1 version. 
+The main enhancements and new features are:
+- Simulator independent and tested to run on several simulators
+- A new architecture, highly modular and extensible, providing a Backplane 
+  that connects Frameworks (where Frameworks can be of different languages 
+  or methodologies)
+- Three examples of language frameworks are provided: UVM-SV, UVM-e, UVM-SC
+- Enables creating a unified hierarchy of components, where parent and 
+  child can reside in different frameworks
+- Supports TLM1 and TLM2 communication between all the provided frameworks
+- Enhanced synchronization of test phases and delegation of phasing control 
+  to a designated framework
+- Provided complete with code openly available under the Apache 2.0 license
+- and more... 
+
+New in version 1.3
+------------------
+- UVM-ML configuration: 
+  Support for multi language configuration was added. 
+  + Information can be found in the "Configuring a Multi-Framework
+    Testbench" section in the IntegratorUserGuide.pdf
+  + For code examples demonstrating configuration, refer to 
+    demos 4, 5 and 6 in the QuickStart.pdf.
+- Scripts and tools: 
+  + The library layout supports in-place compilation with two g++ 
+    versions: g++ 4.4 and g++ 4.1
+  + setup.sh captures environment variable settings for future use.
+    All relevant environment variables, those set by users and those set
+    by setup.sh itself, are captured into two files: 
+        setup.captured.sh (CSH format) 
+    and setup.captured.mk (Makefile format)
+    Users can later rerun these files to get the desired setup, either 
+    manually or by integrating them into existing user setup scripts. 
+  + Initial support for IES 13.2 was added into scripts 
+    (and in the library layout)
+  + the switch -scAllowSCFromPLI is now mandatory for IES users.
+  + spinlock_pt.hpp and spinlock_nt.hpp were added to UVM-ML-OA's copy 
+    of boost. 
+- Documentation changes
+  + A new document README.html was added as a landing page. It has links 
+    to all other documents and suggests where to start reading.
+  + Installation and setup directions are now in README_INSTALLATION.txt 
+    (in place of being in the QuickStart)
+  + Added a section on configuration in the Integrator User Guide
+- Demos and examples:
+  + Added new demo to the unified hierarchy demos showing e IP 
+    under SV environment (demo 6 in QuickStart.pdf)
+  + Added configuration examples in the unified hierarchy demos (demos 5 
+    and 6 in QuickStart.pdf)
+- The Make files invoking the tests and demos have a new "help" option 
+  (e.g. "make help"), that prints the various targets and invocation 
+  modes they support.
+
+Notice: Two environment variables have changed the location they should
+  point to. If you have integrated these variables into shell scripts 
+  in previous UVM-ML 1.2.* releases, you should change their definitions 
+  when using UVM-ML 1.3 as follows:
+  1. OSCI_SRC should point to the root of the ASI SystemC package. E.g., 
+          % setenv  OSCI_SRC  .../systemc/systemc-2.2.0
+     (the previous definition had the "/src" sub directory appended)
+  2. TLM2_INSTALL should point to the root of the TLM2 package. E.g., 
+          % setenv  TLM2_INSTALL  .../TLM-2009-07-15    ## for SC 2.2
+          % setenv  TLM2_INSTALL  $OSCI_SRC             ## for SC 2.3
+     (the previous definition had "/include/tlm" sub directory appended)
+
+Known Limitations and Bugs
+- Support for g++ 4.1 is still partial; some tests still fail with it 
+- There are several limitations around unified hierarchy. 
+  + e sub-trees instantiated under another language component have 
+    limitations (in the areas of messages, agent property 
+    propagation, and method ports). 
+  + SystemC "sandwich" hierarchies are not supported:
+    "sandwich" hierarchies with multiple layers of SystemC (e.g. SC-SV-SC 
+     or SC-e-SC) would result in error messages (the pre-run phases of 
+     the top hierarchical SC component will be executed multiple times)
+  + Parent components (in SystemVerilog or e) cannot instantiate multiple 
+    instances of a SystemC child components
+- Note: The demo examples show working usage of unified hierarchy.
+    Follow the examples shown to avoid these limitations.
+
+
+Previous changes, from version 1.2.2 to 1.2.3
+---------------------------------------------
+- Supports two versions of the Accellera SystemC simulator (OSCI 2.3 was  
+  added, in addition to OSCI 2.2). See the QuickStart for details on how 
+  to choose between them.
+- Runs with Incisive 12.2 and 13.1 (version IES 12.20-s012 and up, 
+  IES 13.1-s001 and up). 
+- The UVM-e adapter is now placed according to IES_VERSION 
+  (.../libs/uvm_e/12.2 or .../libs/uvm_e/13.1). Formerly, there was no 
+  version-specific separation.
+- Error handling in backplane and adapters was improved: Clear error 
+  messages were added, errors are propagated back to the initiator and 
+  assert statements were removed to allow graceful exit.
+- A few unified hierarchy issues were fixed, including better handling of 
+  the instantiation of a SystemVerilog component in a foreign language 
+  hierarchy.
+- Duplicate specification of components as "top" is now caught and reported 
+  as an error (previously specifying a top component on both the IES
+  command line and procedurally in the SystemVerilog task uvm_ml_run_test()
+  caused a warning but execution continued).
+- A few changes were made in phasing:
+  o A common_services framework was added to the backplane containing 
+    phasing services.  The common phasing service is set as the default 
+    phasing service (currently UVM-SV adapter overrides this).
+  o The default backplane phasing (now in common_services) was enhanced 
+    to support post-run phases. Removed phase_ready_to_end broadcasting 
+    for non-runtime phases. 
+  o The UVM-SV adapter slave phasing has been modified to support 
+    phase_start/phase_end/phase_ready_to_end/phase_ended actions and 
+    post-run phasing.
+  o Removed the capability to select between sequential pre-run and 
+    non-sequential pre-run. Pre-run now always executes sequentially.
+- A few changes were made in the Framework Adapters and their API. These 
+  changes should not impact end users, but adapter developers moving from 
+  previous versions to this version will have to adjust their code. 
+  The changes are listed in the file ml/adapter-updates.txt
+
+Previous changes, from version 1.2 to 1.2.2
+-------------------------------------------
+- A few new documents were added in the ml/docs/ directory: 
+       IntegratorUserGuide.pdf, AdapterDeveloperGuide.pdf
+- Added support for unified hierarchy, enabling component hierarchies 
+  where parent and child are from different frameworks. Added tests and 
+  new demos demonstrating this. Information on this can be found in the
+  Integrator's Guide (the chapter on "Constructing an ML Testbench") and 
+  in the white paper.
+- Some clarifications and simplifications were added to the QuickStart and 
+  the install & run demos process (e.g., it is now easier to build only for 
+  a selected simulator).
+- The default behavior for non-blocking TLM2 sockets is modified such that
+  transaction mapping is on (i.e. the original data structure is updated by 
+  the data returned on the backward path).
+- The backplane now checks the consistency of ports and sockets and 
+  produces error messages if an invalid binding is attempted.
+- The UVM-e adapter is part of the UVM-ML package and should be built by 
+  the integrator (see more details in the "UVM-ML Integrators User Guide")
+- The signature of uvm_ml.connect_names() in UVM-e was changed to return a
+  success/failure status. 
+
+
+Platforms and Simulators
+------------------------
+- This release was tested only on the Linux operating system
+- This release of UVM-ML should run with simulators compliant with 
+  IEEE 1800 (SystemVerilog), IEEE 1647 (e), and IEEE 1666 (SystemC).
+- This release works with the following simulators:
+     Cadence Incisive, Accellera SystemC, Synopsys VCS, Mentor Questa
+  Combinations of these simulators are supported to enable running 
+  multiple frameworks in various simulator configurations.
+   
+
+//----------------------------------------------------------------------
+//   Copyright 2013 Cadence Design Systems, Inc.
+//   Copyright 2013 Advance Micro Devices, Inc
+//   All Rights Reserved Worldwide
+//
+//   Licensed under the Apache License, Version 2.0 (the
+//   "License"); you may not use this file except in
+//   compliance with the License.  You may obtain a copy of
+//   the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in
+//   writing, software distributed under the License is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+//   CONDITIONS OF ANY KIND, either express or implied.  See
+//   the License for the specific language governing
+//   permissions and limitations under the License.
+//----------------------------------------------------------------------
+

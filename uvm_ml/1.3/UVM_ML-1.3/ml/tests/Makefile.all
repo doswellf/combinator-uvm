@@ -1,0 +1,134 @@
+## 
+## -------------------------------------------------------------
+##    Copyright 2010 Cadence.
+##    All Rights Reserved Worldwide
+## 
+##    Licensed under the Apache License, Version 2.0 (the
+##    "License"); you may not use this file except in
+##    compliance with the License.  You may obtain a copy of
+##    the License at
+## 
+##        http://www.apache.org/licenses/LICENSE-2.0
+## 
+##    Unless required by applicable law or agreed to in
+##    writing, software distributed under the License is
+##    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+##    CONDITIONS OF ANY KIND, either express or implied.  See
+##    the License for the specific language governing
+##    permissions and limitations under the License.
+## -------------------------------------------------------------
+## 
+.PHONY: default ies ies_ncsc_cl ies_ncsc_proc ies_ncsc_cl_multistep ies_ncsc_proc_multistep ies_osci_cl ies_osci_proc ies_osci_cl_multistep ies_osci_proc_multistep  vcs vcs_osci_proc clean distclean questa questa_osci_proc
+RUN_IES_OSCI ?=1
+RUN_IES_NCSC ?=1
+RUN_VCS ?=1
+RUN_QUESTA ?=1
+default ies: ies_ncsc_proc
+ifeq ($(RUN_IES_NCSC),1)
+ies_ncsc_cl ies_ncsc_proc ies_ncsc_cl_multistep ies_ncsc_proc_multistep:
+	$(MAKE) -f Makefile.ies $@
+else
+ies_ncsc_cl ies_ncsc_proc ies_ncsc_cl_multistep ies_ncsc_proc_multistep:
+	@echo $@ stubbed out
+	@/bin/true
+endif
+
+ifeq ($(RUN_IES_OSCI),1)
+ies_osci_cl ies_osci_proc ies_osci_cl_multistep ies_osci_proc_multistep: 
+	$(MAKE) -f Makefile.ies $@
+else
+ies_osci_cl ies_osci_proc ies_osci_cl_multistep ies_osci_proc_multistep: 
+	@echo $@ stubbed out
+	@/bin/true
+endif
+ 
+ifeq ($(RUN_VCS),1)
+vcs vcs_osci_proc: 
+	$(MAKE) -f Makefile.vcs run
+else
+vcs vcs_osci_proc: 
+	@echo $@ stubbed out
+	@/bin/true
+endif
+
+ifeq ($(RUN_QUESTA),1)
+questa questa_osci_proc:
+	$(MAKE) -f Makefile.questa default
+else
+questa questa_osci_proc: 
+	@echo $@ stubbed out
+	@/bin/true
+endif
+
+clean distclean:
+	$(MAKE) -f Makefile.ies $@
+	$(MAKE) -f Makefile.vcs $@
+	$(MAKE) -f Makefile.questa $@
+
+.PHONY: help
+
+help:
+	@echo "$$UVM_ML_HELP_TEXT"
+
+export UVM_ML_HELP_TEXT
+define UVM_ML_HELP_TEXT
+The various tests in the package support running with IES ( in a number of modes), VCS and Questa.
+
+IES-related targets:
+
+The following tests are run with a single invocation of IRUN:
+
+ies_ncsc_cl: IES is used for both SystemVerilog and SystemC. The parameters are passed via the command line.
+ies_osci_cl:  IES is used for SystemVerilog and the Accellera-SC engine is for SystemC.  The parameters are passed via the command line. 
+ies_ncsc_proc: IES is used for both SystemVerilog and SystemC. The UVM test and tops are created in the test code. 
+ies_osci_proc: IES is used for SystemVerilog and the Accellera-SC engine is for SystemC. The UVM test and tops are created in the test code.
+
+For the following tests, "irun -compile" - "ncelab" - "ncsim" sequence is used: 
+
+ies_osci_proc_multistep: similar to ies_osci_proc
+ies_osci_cl_multistep : similar to ies_osci_cl
+ies_ncsc_cl_multistep: similar to ies_ncsc_cl
+ies_ncsc_proc_multistep: similar to ies_ncsc_proc
+
+Invoking "make" or "make ies" will run "ies_ncsc_proc".
+It should be noted that some demos do not support the *_cl targets. 
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+VCS-related targets: 
+
+
+vcs_osci_proc : run the test using the VCS simulator for SystemVerilog and the Accellera-SC engine for SystemC.
+vcs is an alias for vcs_osci_proc.
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Questa-related targets:
+
+questa_osci_proc: run the test using the Questa simulator for SystemVerilog  and the Accellera-SC engine for SystemC
+questa is an alias for questa_osci_proc 
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+Common targets: 
+
+clean: remove all the files produced during the test except simulator and Specman logs.
+distclean: remove all the files produced during the test, including the logs.
+
+Makefile variables: 
+
+For IES targets: 
+
+-	EXIT_OPT, set to "-exit" by default. Please unset it if you want the simulation to stay at the prompt, e.g. by invoking make  EXIT_OPT=
+-	GUI_OPT. Please set to "-gui" etc if you want the simulation to run in the GUI mode.
+-	EXTRA_IRUN_ARGS. Please use it to pass any custom arguments to irun. Applicable to all non-multistep targets.
+-	EXTRA_IRUN_COMPILE_ARGS. Please use it to pass any custom arguments to irun. Applicable to all multistep targets.
+-	EXTRA_NCSIM_ARGS. Please use it to pass any custom arguments to ncsim. Applicable to all multistep targets. 
+
+For non-IES targets: 
+-	EXTRA_SN_COMPILE_ARGS. Please use it to pass any custom arguments to sn_compile.sh
+-	EXTRA_VCS_ARGS. Please use it to pass any custom arguments to VCS.
+-	EXTRA_VSIM_ARGS. Please use it to pass any custom arguments to Questa.
+
+endef

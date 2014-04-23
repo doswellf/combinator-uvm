@@ -1,0 +1,28 @@
+A Practical Guide to Adopting the Universal Verification Methodology (UVM)
+--------------------------------------------------------------------------
+Chapter 10: System UVCs and Testbench Integration
+--------------------------------------------------------------------------
+
+Example 10-1: UART Controller Module Monitor
+Example 10-2: UART Controller Monitor build_phase() and connect_phase()
+Example 10-3: UART Controller Module UVC
+Example 10-4: UART Configuration Class
+Example 10-5: UART Controller Configuration Class
+Example 10-6: UART Controller Testbench
+Example 10-7: UART Controller Base Virtual Sequence
+Example 10-8: UART Controller Virtual Sequence
+Example 10-9: Module UVC DUT Coverage
+Example 10-10: Module UVC Performance-Related Coverage
+Example 10-11: Configuration Sequence with Configurable Backdoor Access
+==============================================================================
+
+For this set of examples, you will need to set two environment variables:
+  setenv IREG_GEN  $IES_INSTALL_DIR/tools/methodology/iregGen
+  setenv UVM_REF_HOME  $IES_INSTALL_DIR/kits/VerificationKit
+
+All of these example files are part of the larger UART Controller testbench.
+
+A complete example can be found in the following directory:
+
+   %  cd ${UVM_REF_HOME}/soc_verification_lib/sv_cb_ex_lib/uart_ctrl
+   % $UVM_REF_HOME/soc_verification_lib/sv_cb_ex_lib/uart_ctrl/demo.sh

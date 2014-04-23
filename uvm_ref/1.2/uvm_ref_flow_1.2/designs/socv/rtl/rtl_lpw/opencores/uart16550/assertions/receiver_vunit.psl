@@ -1,0 +1,149 @@
+//----------------------------------------------------------------------
+//   Copyright 1999-2010 Cadence Design Systems, Inc.
+//   All Rights Reserved Worldwide
+//
+//   Licensed under the Apache License, Version 2.0 (the
+//   "License"); you may not use this file except in
+//   compliance with the License.  You may obtain a copy of
+//   the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in
+//   writing, software distributed under the License is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+//   CONDITIONS OF ANY KIND, either express or implied.  See
+//   the License for the specific language governing
+//   permissions and limitations under the License.
+//----------------------------------------------------------------------
+
+
+
+vunit uart_receiver_property(uart_receiver) {
+
+
+`ifdef UART_ABV_ON
+
+default clocking DEFCLK  @(posedge clk);
+endclocking
+
+
+// If state is sr_idle and (srx_pad_i==1'b0 & ~break_error), next state will be "sr_rec_start"
+core_sr_idle_to_sr_rec_start : assert property ( @(posedge clk) 
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_idle) && ~srx_pad_i && ~break_error) |=>
+        ( (rstate == sr_rec_start) ) );
+
+
+// If state is sr_rec_start and (srx_pad_i==1'b1 & rcounter16_eq_7), next state will be "sr_idle"
+core_sr_rec_start_to_sr_idle : assert property (  @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_rec_start) && srx_pad_i && rcounter16_eq_7)  |=>
+        (rstate == sr_idle) );
+
+
+// IF current state is sr_rec_start and rcounter16_eq_7 and ~srx_pad_i next state is sr_rec_prepare
+core_sr_rec_start_to_sr_rec_prepare : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_rec_start) && ~srx_pad_i && rcounter16_eq_7)  |=>
+        (rstate == sr_rec_prepare)  );
+
+
+// If current state is sr_rec_prepare and rcounter16_eq_0, next state is sr_rec_bit
+core_sr_rec_prepare_to_sr_rec_bit : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_rec_prepare) && rcounter16_eq_0) |=>
+        (rstate == sr_rec_bit) );
+
+
+// If current state is sr_rec_bit annd prev state was sr_rec_prepare, rcounter16 == 14 and rshift == 0
+core_check_rcounter16 : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_rec_bit) && ($past(rstate) == sr_rec_prepare) ) |=> 
+        ( (rcounter16 == 4'b1110)  && (rshift == 0) ) );
+
+
+// If current state is, sr_rec_bit and rcounter16_eq_0, next state is sr_end_bit
+core_sr_rec_bit_to_sr_end_bit : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_rec_bit) && rcounter16_eq_0 ) |=> 
+        (rstate == sr_end_bit) );
+
+
+// If current state is sr_end_bit and rbit_counter is non zero, next state is, sr_rec_bit
+core_sr_end_bit_to_sr_rec_bit : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_end_bit) && (rbit_counter != 0) ) |=>
+        ( (rstate == sr_rec_bit) ) );
+
+// If current state is sr_end_bit and rbit_counter is zero, next state is, 
+// sr_rec_parity || sr_rec_stop
+core_sr_end_bit_to_next_state : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_end_bit) && (rbit_counter == 0) ) |=>
+        ( (rstate == sr_rec_parity)  || (rstate == sr_rec_stop) ) );
+
+
+// IF current state is sr_ca_lc_parity, next state is sr_check_parity
+core_sr_ca_lc_parity_to_sr_check_parity : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_ca_lc_parity) ) |=>
+        (rstate == sr_check_parity) );
+
+// IF current state is sr_check_parity, next state is sr_wait1
+core_sr_check_parity_to_sr_wait1 : assert property ( @(posedge clk) 
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_check_parity) ) |=>
+        (rstate == sr_wait1) );
+
+
+// If current state is sr_wait1 and rcounter16_eq_0, next state is sr_rec_stop
+core_sr_wait1_to_sr_rec_stop : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( enable && (rstate == sr_wait1)  && rcounter16_eq_0 ) |=>
+        (rstate == sr_rec_stop) );
+
+// If current state is sr_push, and break_error is zero, rf_push should be hig in next cycle
+core_rf_push : assert property  ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        (enable && (rstate == sr_push) && ~break_error && ~rframing_error) |=> 
+        ( rf_push ) );
+
+
+// If Fifo is accessed or Fifo is empty, output counter_t should be equal to toc_value
+output_counter_t : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        ( rf_push_pulse || rf_pop || (rf_count == 0) ) |=> 
+        (counter_t == $past(toc_value))  );
+
+//  Lab add 2
+// At the rising edge of rf_push, rf_push_pulse should be generated
+// psl output_rf_push_pulse : assert always
+// ( {  rose(rf_push)  } |=> {rf_push_pulse} )
+// abort (wb_rst_i);
+
+// Lab add : 1
+// Input rf_pop should be low when rf_count is equal to zero
+input_rf_pop : assume property ( @(posedge clk)
+     disable iff (wb_rst_i)
+        ( rf_count == 0) |-> (~rf_pop) );
+
+
+// rf_push_pulse output should last only for one clock cycle
+output_rf_push_pulse_width : assert property ( @(posedge clk)
+      disable iff  (wb_rst_i)
+        (  rf_push_pulse  ) |=> (~rf_push_pulse) );
+
+// At reset output rf_count should be zero, this indicates rx fifo is empty
+output_rf_count_zero : assert property ( @(posedge clk)
+        ( wb_rst_i || rx_reset ) |=> (rf_count == 0) );
+
+
+// Cover Fifo empty to Fifo full
+// psl cover_fifo_empty_to_full : 
+//     cover {(rf_count == 0); [*]; (rf_count == 16) };
+
+`endif
+}
+
+

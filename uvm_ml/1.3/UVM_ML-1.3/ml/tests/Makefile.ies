@@ -1,0 +1,288 @@
+## 
+## -------------------------------------------------------------
+##    Copyright 2010 Cadence.
+##    All Rights Reserved Worldwide
+## 
+##    Licensed under the Apache License, Version 2.0 (the
+##    "License"); you may not use this file except in
+##    compliance with the License.  You may obtain a copy of
+##    the License at
+## 
+##        http://www.apache.org/licenses/LICENSE-2.0
+## 
+##    Unless required by applicable law or agreed to in
+##    writing, software distributed under the License is
+##    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+##    CONDITIONS OF ANY KIND, either express or implied.  See
+##    the License for the specific language governing
+##    permissions and limitations under the License.
+## -------------------------------------------------------------
+## 
+.PHONY: default ies ies_ncsc_cl ies_osci_cl ies_ncsc_proc  ies_osci_proc
+.PHONY: ies_proper ies_proc_proper ies_osci_proper ies_osci_proc_proper
+.PHONY: check check_ies check_ies_proc check_ies_osci check_ies_osci_proc
+.PHONY: ies_osci_proc_multist2ep ies_osci_cl_multistep
+.PHONY: ies_ncsc_cl_multistep ies_ncsc_proc_multistep
+.PHONY: clean distclean
+default ies: ies_ncsc_proc
+check: check_ies
+
+UVM_ML_LD ?= ${UVM_ML_CC}
+
+ifndef UVM_ML_COMPILER_VERSION
+UVM_ML_COMPILER_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh $(UVM_ML_CC))
+endif
+export UVM_ML_COMPILER_VERSION
+
+ifndef IES_VERSION
+IES_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_ies_version.sh)
+endif
+export IES_VERSION
+
+
+BITS ?= 64
+
+
+
+
+ifeq ($(BITS),64)
+export UNILANG_OVERRIDE:=$(UVM_ML_HOME)/ml/libs/backplane/$(UVM_ML_COMPILER_VERSION)/64bit/
+MODE_FLAG:=-64bit
+SUBDIR:=/64bit
+UVM_ML_IRUN_ARGS:= -f $(UVM_ML_HOME)/ml/tests/irun_uvm_ml.64.f
+BIT_CFLAGS:=
+ALL_OSCI_LIB:=liball_osci_ies.64.so
+ifeq ($(UVM_ML_COMPILER_VERSION),4.4)
+UVM_ML_SPECFILE_SUFFIX := .64bit
+else
+UVM_ML_SPECFILE_SUFFIX := .4.1.64bit
+endif
+else
+export UNILANG_OVERRIDE:=$(UVM_ML_HOME)/ml/libs/backplane/$(UVM_ML_COMPILER_VERSION)/
+UVM_ML_IRUN_ARGS:= -f $(UVM_ML_HOME)/ml/tests/irun_uvm_ml.32.f
+MODE_FLAG:=
+SUBDIR:=
+BIT_CFLAGS:=-m32
+ALL_OSCI_LIB:=liball_osci_ies.so 
+endif
+
+export UVM_ML_OVERRIDE := $(UNILANG_OVERRIDE)
+
+
+
+
+ifndef UVM_ML_E_ADAPTER_LOCATION
+UVM_ML_E_ADAPTER_LOCATION:=$(UVM_ML_HOME)/ml/libs/uvm_e
+endif
+
+ifneq ($(SPECMAN_PATH),)
+SPECMAN_PATH := ${UVM_ML_E_ADAPTER_LOCATION}/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR):${SPECMAN_PATH}
+else
+SPECMAN_PATH := ${UVM_ML_E_ADAPTER_LOCATION}/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR)
+endif 
+export SPECMAN_PATH
+
+ies_ncsc_cl_multistep ies_ncsc_proc_multistep ies_osci_cl_multistep ies_osci_proc_multistep: export SPECMAN_DLIB ?= ${UVM_ML_E_ADAPTER_LOCATION}/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR)/libsn_sn_uvm_ml.so
+
+TEST ?= /usr/bin/test
+
+UVM_HOME := $(UVM_ML_HOME)/ml/frameworks/uvm/sv/uvm-1.1c
+
+ifneq ($(SC_TOP),)
+SC_TOP_ARG= -uvmtop SC:$(SC_TOP)
+OSCI_SC_TOP= -uvmtop SC:$(SC_TOP)
+else
+SC_TOP_ARG=
+OSCI_SC_TOP=
+endif
+
+
+ifneq ($(HAS_E),)
+UVM_E_SHLIB_ARGS = -snshlib $(UVM_ML_E_ADAPTER_LOCATION)/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR)/libsn_sn_uvm_ml.so
+SN_COMP_FLAG=-nosncomp
+else
+UVM_E_SHLIB_ARGS = 
+SN_COMP_FLAG=
+endif
+
+ifeq ($(GUI_OPT),)
+EXIT_OPT ?= -exit
+else
+EXIT_OPT=
+endif
+
+
+
+
+
+PROC_DEFINE = -define USE_UVM_ML_RUN_TEST
+
+COMMON_RUN_CMD ?= irun    $(LOG_FILE_ARG) $(IES_TIME_SCALE) $(UVM_ML_IRUN_ARGS) $(MODE_FLAG) $(SRC_FILES) -nosncomp $(E_FILES) +UVM_NO_RELNOTES -nocopyright -access rw -uvmhome $(UVM_HOME) $(GUI_OPT) $(EXIT_OPT) $(EXTRA_IRUN_ARGS) $(UVM_E_SHLIB_ARGS)
+
+COMMON_IRUN_COMPILE_CMD ?= irun -Wcxx,-I$(UVM_ML_HOME)/ml/frameworks/uvm/sc/ -compile -ml_uvm  $(SN_COMP_FLAG) $(MULTISTEP_STUB_E_FILES) $(IES_TIME_SCALE) $(UVM_ML_IRUN_ARGS) $(MODE_FLAG) $(SRC_FILES) +UVM_NO_RELNOTES -nocopyright -access rw -uvmhome $(UVM_HOME) $(EXTRA_IRUN_COMPILE_ARGS) 
+
+IRUN_COMPILE_NCSC_ARGS ?=-I${UVM_ML_HOME}/ml/adapters/uvm_sc -I${UVM_ML_HOME}/ml/adapters/uvm_sc/common -I${UVM_ML_HOME}/ml/adapters/uvm_sc/ncsc $(SYSC_FLAG) $(SYSC_FILES)
+
+IRUN_COMPILE_NCSC_CMD ?= $(COMMON_IRUN_COMPILE_CMD) $(IRUN_COMPILE_NCSC_ARGS) 
+
+IRUN_COMPILE_NCSC_CL_CMD ?= $(IRUN_COMPILE_NCSC_CMD)
+
+IRUN_COMPILE_NCSC_PROC_CMD ?= $(IRUN_COMPILE_NCSC_CMD) $(PROC_DEFINE)
+
+IRUN_COMPILE_OSCI_CMD ?= $(COMMON_IRUN_COMPILE_CMD) -L$(CURDIR) $(ALL_OSCI_LIB) $(EXTRA_OSCI_ARGS)
+
+IRUN_COMPILE_OSCI_CL_CMD ?= $(IRUN_COMPILE_OSCI_CMD) 
+
+IRUN_COMPILE_OSCI_PROC_CMD ?= $(IRUN_COMPILE_OSCI_CMD) $(PROC_DEFINE)
+
+
+ifneq ($(SYSC_FILES),)
+NCELAB_NCSC_SYSC_ARGS= -SCRUN -HASCC -HASSYSC
+else
+NCELAB_NCSC_SYSC_ARGS=
+endif
+
+ifneq ($(SC_TOP),)
+NCELAB_SC_TOP=-sctop $(SC_TOP)
+endif
+
+
+COMMON_NCELAB_CMD ?= ncelab $(MODE_FLAG) -loadpli `ncroot`/tools/uvm/uvm_lib/uvm_sv/lib$(SUBDIR)/libuvmpli.so:uvm_pli_boot -ACCESS +rw -MESSAGES   -loadrun ./INCA_libs/irun.nc/librun -XLMODE ./INCA_libs/irun.nc -RUNMODE -CDSLIB ./INCA_libs/irun.nc/cds.lib -HDLVAR ./INCA_libs/irun.nc/hdl.var -WORK worklib  -HASXLMODE 
+# $(NCELAB_NCSC_SYSC_ARGS)
+NCELAB_NCSC_CL_CMD = $(COMMON_NCELAB_CMD) $(NCELAB_NCSC_SYSC_ARGS) $(NCELAB_SC_TOP)
+NCELAB_NCSC_PROC_CMD = $(COMMON_NCELAB_CMD) $(NCELAB_NCSC_SYSC_ARGS) 
+
+NCELAB_OSCI_CL_CMD = $(COMMON_NCELAB_CMD)
+NCELAB_OSCI_PROC_CMD = $(COMMON_NCELAB_CMD)
+
+MULTISTEP_TOP_MODULE ?= worklib.topmodule:sv
+SC_TOP ?= sctop
+
+ifneq ($(SYSC_FILES),)
+SYSC_FLAG=-sysc
+else
+SYSC_FLAG=
+endif
+
+COMMON_NCSIM_CMD=  ncsim -messages $(MODE_FLAG) -INPUT "@source `ncroot`/tools/uvm/uvm_lib/uvm_sv/files/tcl/uvm_sim.tcl" -sv_lib `ncroot`/tools/uvm/uvm_lib/uvm_sv/lib$(SUBDIR)/libuvmpli.so -sv_lib `ncroot`/tools/uvm/uvm_lib/uvm_sv/lib$(SUBDIR)/libuvmdpi.so -sv_lib ${UNILANG_OVERRIDE}/libml_uvm.so $(MULTISTEP_TOP_MODULE) -run $(GUI_OPT) $(EXIT_OPT)
+
+
+NCSIM_NCSC_CL_CMD ?= $(COMMON_NCSIM_CMD) $(UVM_TEST_TOPS)
+NCSIM_NCSC_PROC_CMD ?= $(COMMON_NCSIM_CMD) -ml_uvm
+NCSIM_OSCI_CL_CMD ?= $(COMMON_NCSIM_CMD) $(UVM_TEST_TOPS) -sv_lib $(ALL_OSCI_LIB) $(OSCI_SC_TOP) 
+NCSIM_OSCI_PROC_CMD ?= $(COMMON_NCSIM_CMD) -ml_uvm -sv_lib $(ALL_OSCI_LIB)
+
+COMMON_RUN_NCSC_CMD ?= $(COMMON_RUN_CMD) -DSC_INCLUDE_DYNAMIC_PROCESSES $(SYSC_FLAG) -I${UVM_ML_HOME}/ml/adapters/uvm_sc -I${UVM_ML_HOME}/ml/adapters/uvm_sc/common -I${UVM_ML_HOME}/ml/adapters/uvm_sc/ncsc  $(SYSC_FILES)
+
+RUN_NCSC_CMD = $(COMMON_RUN_NCSC_CMD) $(UVM_TEST_TOPS) $(SC_TOP_ARG)
+
+RUN_NCSC_PROC_CMD = $(COMMON_RUN_NCSC_CMD) -ml_uvm $(SV_TOP) $(PROC_DEFINE)
+
+COMMON_RUN_OSCI_CMD = $(COMMON_RUN_CMD)  -sv_lib $(ALL_OSCI_LIB) 
+
+RUN_OSCI_CMD=$(COMMON_RUN_OSCI_CMD) $(UVM_TEST_TOPS) $(OSCI_SC_TOP)  -L$(CURDIR) $(ALL_OSCI_LIB) $(EXTRA_OSCI_ARGS)
+RUN_OSCI_PROC_CMD=$(COMMON_RUN_OSCI_CMD) -ml_uvm $(SV_TOP)  -L$(CURDIR) $(ALL_OSCI_LIB) $(EXTRA_OSCI_ARGS)
+RUN_OSCI_PROC_CMD=$(COMMON_RUN_OSCI_CMD) -ml_uvm $(SV_TOP)  -L`pwd` $(ALL_OSCI_LIB) $(EXTRA_OSCI_ARGS) $(PROC_DEFINE)
+
+
+ERROR_FLAG=0
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+
+ifeq ($(UVM_ML_HOME),)
+ERROR_FLAG=1
+$(warning ** UVM_ML_HOME variable is not defined **)
+endif
+
+
+endif
+endif
+
+ies_ncsc_cl: | ies_proper check_ies 
+ies_proper check_ies: LOG_FILE ?= irun_ncsc_cl.$(BITS).log
+ies_proper check_ies: LOG_FILE_ARG = -l $(LOG_FILE)
+ies_proper:
+	$(RUN_NCSC_CMD)	
+
+ifneq ($(SYSC_FILES),)
+ies_osci_cl: $(ALL_OSCI_LIB) | ies_osci_proper check_ies_osci
+ies_osci_proper check_ies_osci: LOG_FILE ?= irun_osci_cl.$(BITS).log
+ies_osci_proper check_ies_osci: LOG_FILE_ARG = -nolog 
+ies_osci_proper: 
+	@echo $(UNILANG_OVERRIDE)
+	$(RUN_OSCI_CMD) 2>&1 | tee $(LOG_FILE)
+else
+ies_osci: 
+	@/bin/true
+endif
+
+ies_ncsc_proc: | ies_proc_proper check_ies_proc
+ies_proc_proper check_ies_proc: LOG_FILE ?= irun_ncsc_proc.$(BITS).log
+ies_proc_proper check_ies_proc: LOG_FILE_ARG = -l $(LOG_FILE)
+ies_proc_proper: 
+	$(RUN_NCSC_PROC_CMD)
+
+ifneq ($(SYSC_FILES),)
+ies_osci_proc: $(ALL_OSCI_LIB) | ies_osci_proc_proper check_ies_osci_proc
+
+ies_osci_proc_proper check_ies_osci_proc : LOG_FILE ?= irun_osci_proc.$(BITS).log
+ies_osci_proc_proper check_ies_osci_proc : LOG_FILE_ARG = -nolog 
+ies_osci_proc_proper:
+	echo ${UNILANG_OVERRIDE}
+	echo ${UVM_ML_COMPILER_VERSION}
+	$(RUN_OSCI_PROC_CMD) 2>&1 | tee $(LOG_FILE) 
+else
+ies_osci_proc:
+	@/bin/true
+endif
+
+# FIXME - temporary, ies_ncsc_cl only: 
+.PHONY: ies_ncsc_cl_multistep
+
+ies_ncsc_cl_multistep: 
+	$(IRUN_COMPILE_NCSC_CL_CMD)
+	$(NCELAB_NCSC_CL_CMD)
+	$(NCSIM_NCSC_CL_CMD)
+ies_ncsc_proc_multistep:
+	$(IRUN_COMPILE_NCSC_PROC_CMD)
+	$(NCELAB_NCSC_PROC_CMD)
+	$(NCSIM_NCSC_PROC_CMD)
+
+ifneq ($(SYSC_FILES),)
+ies_osci_cl_multistep: $(ALL_OSCI_LIB)
+	$(IRUN_COMPILE_OSCI_CL_CMD)
+	$(NCELAB_OSCI_CL_CMD)
+	$(NCSIM_OSCI_CL_CMD)
+ies_osci_proc_multistep: $(ALL_OSCI_LIB)
+	$(IRUN_COMPILE_OSCI_PROC_CMD)
+	$(NCELAB_OSCI_PROC_CMD)
+	$(NCSIM_OSCI_PROC_CMD)
+else
+ies_osci_cl_multistep ies_osci_proc_multistep:
+	@/bin/true
+endif
+
+check_ies check_ies_proc check_ies_osci check_ies_osci_proc:
+	@echo "Checking the results in $(LOG_FILE)..."
+	grep -q -i -E '\[TEST_DONE\]|\*\* UVM TEST PASSED|^TEST PASSED' $(LOG_FILE)
+	$(TEST)  $$(grep -c -i -E 'TEST FAILED|\*ERROR|\*FATAL' $(LOG_FILE)) -eq 0 
+
+clean:
+	-rm -rf INCA_libs *~ core $(ALL_OSCI_LIB) irun*.err ncelab*.err ncsim*.err
+distclean: clean
+	-rm -rf irun*.log *.elog
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(SYSC_FILES),)
+ifneq ($(findstring osci,$(MAKECMDGOALS)),)
+include $(UVM_ML_HOME)/ml/tests/Makefile.liball_osci
+endif
+endif
+endif
+endif
+
+ifeq ($(ERROR_FLAG),1)
+$(error ** One or more of vital environment variables are not defined **)
+endif

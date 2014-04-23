@@ -1,0 +1,8 @@
+-define FV_KIT_BLACK_BOX_SPI
+//-define FV_KIT_BLACK_BOX_UART1 - UART not black boxed
+-define FV_KIT_BLACK_BOX_GPIO
+-define FV_KIT_BLACK_BOX_TTC
+-define FV_KIT_BLACK_BOX_WDT
+-define FV_KIT_BLACK_BOX_SMC
+//-define FV_KIT_BLACK_BOX_POWER_CTRL - POWER_CTRL not black boxed
+-define FV_KIT_BLACK_BOX_APIC

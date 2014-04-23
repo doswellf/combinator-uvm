@@ -1,0 +1,7 @@
+<'
+
+struct packet {
+    % data:int;
+};
+
+'>

@@ -1,0 +1,92 @@
+# ----------------------------------------------------------------------
+#    Copyright 2012 Cadence Design Systems, Inc.
+#    All Rights Reserved Worldwide
+# 
+#    Licensed under the Apache License, Version 2.0 (the
+#    "License"); you may not use this file except in
+#    compliance with the License.  You may obtain a copy of
+#    the License at
+# 
+#        http://www.apache.org/licenses/LICENSE-2.0
+# 
+#    Unless required by applicable law or agreed to in
+#    writing, software distributed under the License is
+#    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#    CONDITIONS OF ANY KIND, either express or implied.  See
+#    the License for the specific language governing
+#    permissions and limitations under the License.
+# ----------------------------------------------------------------------
+
+FW_BASE = ..
+OSCI_PATCH=../../../osci/${OSCI_VERSION}
+
+
+ifeq ($(BITS),64)
+OBJEXT=osci.${OSCI_VERSION}.${UVM_ML_COMPILER_VERSION}.64.o
+BIT_FLAGS=-fPIC
+BOOST_LIB_DIR=$(UVM_ML_HOME)/ml/libs/boost/${UVM_ML_COMPILER_VERSION}/64bit
+64BIT_DIR=/64bit
+else
+OBJEXT=osci.${OSCI_VERSION}.${UVM_ML_COMPILER_VERSION}.o
+BIT_FLAGS=-m32
+BOOST_LIB_DIR=$(UVM_ML_HOME)/ml/libs/boost/${UVM_ML_COMPILER_VERSION}
+64BIT_DIR=
+endif
+
+
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/osci/$(OSCI_VERSION)/${UVM_ML_COMPILER_VERSION}${64BIT_DIR}
+TARGET_LIB = $(LIB_BUILD_DIR)/libuvm_sc_fw_osci.so
+TARGET_STATIC_LIB=$(LIB_BUILD_DIR)/libuvm_sc_fw_osci.a
+
+
+CFLAGS ?= $(BIT_FLAGS)  -I$(FW_BASE)/base/osci -I$(OSCI_PATCH) -I${OSCI_INSTALL}/include -I./$(FW_BASE)  
+LDOPTS ?= $(BIT_FLAGS) -shared -L$(BOOST_LIB_DIR) -luvmscboost_regex -Wl,-rpath,$(BOOST_LIB_DIR)
+
+OSOURCES = \
+	$(FW_BASE)/base/uvm_component.cpp \
+	$(FW_BASE)/base/uvm_factory.cpp \
+	$(FW_BASE)/base/uvm_globals.cpp \
+	$(FW_BASE)/base/uvm_ids.cpp \
+	$(FW_BASE)/base/uvm_manager.cpp \
+	$(FW_BASE)/base/uvm_object.cpp \
+	$(FW_BASE)/base/uvm_packer.cpp \
+	$(FW_BASE)/base/uvm_typed.cpp \
+	$(FW_BASE)/base/uvm_barrier.cpp \
+	$(FW_BASE)/base/uvm_phase.cpp \
+	$(FW_BASE)/base/uvm_common_phase.cpp \
+	$(FW_BASE)/base/uvm_schedule.cpp \
+	$(FW_BASE)/base/uvm_common_schedule.cpp \
+	$(FW_BASE)/base/uvm_resource_base.cpp \
+	$(FW_BASE)/base/uvm_resource_pool.cpp
+
+OBJS=$(subst .cpp,.$(OBJEXT),$(OSOURCES))
+
+
+DEPFILES=$(subst .cpp,.$(OBJEXT).d,$(OSOURCES))
+
+AR1=ar cvr
+
+.PHONY: default clean
+
+default : $(LIB_BUILD_DIR) $(TARGET_LIB) $(TARGET_STATIC_LIB)
+	@echo "UVM-SC framework library for OSCI has been built"
+$(LIB_BUILD_DIR):
+	mkdir -p $@
+$(TARGET_STATIC_LIB):  $(OBJS)
+	$(AR1) $@ $^
+$(TARGET_LIB) : $(OBJS)
+	$(UVM_ML_LD) $(DEBUG_FLAGS) -o $(TARGET_LIB) $(LDOPTS) $(OBJS)
+
+%.$(OBJEXT): %.cpp
+	$(UVM_ML_CC) $(CFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+%.$(OBJEXT).d: %.cpp
+	$(UVM_ML_CC) $(CFLAGS) $(DEBUG_FLAGS) -MM -MQ $(subst .d,,$@)  $< -o $@
+
+clean:
+	-rm -f  *.a *.so $(OBJS) $(DEPFILES) $(TARGET_LIB) $(TARGET_STATIC_LIB)
+.PHONY: test
+test: 
+	@echo $(OBJS)
+ifneq ($(MAKECMDGOAL),clean)
+include $(DEPFILES)
+endif

@@ -1,0 +1,109 @@
+# ----------------------------------------------------------------------
+#    Copyright 2012 Cadence Design Systems, Inc.
+#    All Rights Reserved Worldwide
+# 
+#    Licensed under the Apache License, Version 2.0 (the
+#    "License"); you may not use this file except in
+#    compliance with the License.  You may obtain a copy of
+#    the License at
+# 
+#        http://www.apache.org/licenses/LICENSE-2.0
+# 
+#    Unless required by applicable law or agreed to in
+#    writing, software distributed under the License is
+#    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#    CONDITIONS OF ANY KIND, either express or implied.  See
+#    the License for the specific language governing
+#    permissions and limitations under the License.
+# ----------------------------------------------------------------------
+
+ifndef UVM_ML_COMPILER_VERSION
+UVM_ML_COMPILER_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh $(UVM_ML_CC))
+endif
+
+OSCI_PATCH = ../../../frameworks/osci/${OSCI_VERSION}
+FW_BASE = ../../../frameworks/uvm/sc
+UVM_ML = ..
+BOOST_HOME = ${FW_BASE}/packages/boost
+
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/osci/$(OSCI_VERSION)/${UVM_ML_COMPILER_VERSION}
+LIB_NAME=libuvm_sc_ml_osci.so
+STATIC_LIB_NAME=libuvm_sc_ml_osci.a
+
+ifeq ($(BITS),64)
+OBJEXT=osci.${OSCI_VERSION}.${UVM_ML_COMPILER_VERSION}.64.o
+TARGET_LIB = $(LIB_BUILD_DIR)/64bit/$(LIB_NAME)
+TARGET_STATIC_LIB=$(LIB_BUILD_DIR)/64bit/$(STATIC_LIB_NAME)
+BIT_FLAGS=-fPIC
+SUBDIR=/64bit/
+PATCHED_OSCI_LIB=$(LIB_BUILD_DIR)/64bit/libsystemc.a
+else
+OBJEXT=osci.${OSCI_VERSION}.${UVM_ML_COMPILER_VERSION}.o
+SUBDIR=/
+TARGET_LIB = $(LIB_BUILD_DIR)/$(LIB_NAME)
+TARGET_STATIC_LIB = $(LIB_BUILD_DIR)/$(STATIC_LIB_NAME)
+BIT_FLAGS=-m32
+PATCHED_OSCI_LIB=$(LIB_BUILD_DIR)/libsystemc.a
+endif
+
+ifeq ($(OSCI_VERSION),2.2)
+CFLAGS ?= $(BIT_FLAGS) -I$(OSCI_PATCH) -I./$(UVM_ML) -I$(UVM_ML_HOME)/ml/backplane -I./$(UVM_ML) -I./$(UVM_ML)/osci -I$(FW_BASE)/base/osci -I${OSCI_SRC}/src -I./$(FW_BASE) -I$(FW_BASE)/osci -I${UVM_ML_HOME}/ml/adapters/uvm_sc/common/tlm2_osci_patch/${OSCI_VERSION} -I${TLM2_INSTALL}/include/tlm -I${TLM2_INSTALL}/include/tlm/tlm_h/tlm_generic_payload
+else
+CFLAGS ?= $(BIT_FLAGS) -I$(OSCI_PATCH) -I./$(UVM_ML) -I$(UVM_ML_HOME)/ml/backplane -I./$(UVM_ML) -I./$(UVM_ML)/osci -I$(FW_BASE)/base/osci -I${UVM_ML_HOME}/ml/adapters/uvm_sc/common/tlm2_osci_patch/${OSCI_VERSION} -I${OSCI_SRC}/src -I./$(FW_BASE) -I$(FW_BASE)/osci 
+endif
+
+LDOPTS ?= $(BIT_FLAGS) -Wl,--whole-archive -L$(LIB_BUILD_DIR)$(SUBDIR) -lsystemc -Wl,--no-whole-archive -shared 
+
+AR=ar cvr 
+
+OSOURCES = \
+	$(UVM_ML)/common/uvm_ml_packer.cpp \
+	$(UVM_ML)/common/uvm_ml_adapter.cpp \
+	$(UVM_ML)/common/uvm_ml_hierarchy.cpp \
+	$(UVM_ML)/common/uvm_ml_phase.cpp \
+        $(UVM_ML)/common/uvm_ml_config_rsrc.cpp \
+	$(UVM_ML)/common/ml_tlm2/ml_tlm2.cpp \
+	$(OSCI_PATCH)/sysc/kernel/sc_simcontext.cpp
+
+OBJS=$(subst .cpp,.$(OBJEXT),$(OSOURCES))
+
+
+DEPFILES=$(subst .cpp,.$(OBJEXT).d,$(OSOURCES))
+
+.PHONY: default clean
+
+default : $(LIB_BUILD_DIR) $(TARGET_LIB) $(TARGET_STATIC_LIB)
+	@echo "UVM-SC OSCI shared library $(TARGET_LIB) has been built"
+
+
+ifeq ($(BITS),64)
+ORIGINAL_OSCI_PATH=${OSCI_INSTALL}/lib-linux64
+else
+ORIGINAL_OSCI_PATH=${OSCI_INSTALL}/lib-linux/
+endif
+
+
+$(LIB_BUILD_DIR):
+	mkdir -p $@
+
+
+$(TARGET_LIB) :  $(OBJS) $(PATCHED_OSCI_LIB)
+	$(UVM_ML_LD) $(DEBUG_FLAGS) -o $(TARGET_LIB) $(LDOPTS) $(OBJS)
+$(TARGET_STATIC_LIB) :  $(OBJS) 
+	ar cvr $@ $^
+
+$(PATCHED_OSCI_LIB) : $(ORIGINAL_OSCI_PATH)/libsystemc.a
+	/bin/cp $< $@
+	ar -v -d $@ sc_simcontext.o
+
+%.$(OBJEXT): %.cpp
+	$(UVM_ML_CC) $(CFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+%.$(OBJEXT).d: %.cpp
+	$(UVM_ML_CC) $(CFLAGS) $(DEBUG_FLAGS) -MM -MQ $(subst .d,,$@)  $< -o $@
+
+clean:
+	-rm -f   $(PATCHED_OSCI_LIB) $(TARGET_LIB) $(TARGET_STATIC_LIB) $(OBJS) $(DEPFILES)
+
+ifneq ($(MAKECMDGOALS),clean)
+include $(DEPFILES)
+endif

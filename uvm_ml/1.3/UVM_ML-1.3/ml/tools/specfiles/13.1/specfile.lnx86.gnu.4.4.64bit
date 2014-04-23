@@ -1,0 +1,156 @@
+SYSC_LIB_PREFIX = ${NCSC_CDS_ROOT}/tools/systemc/lib/64bit/gnu/4.4
+SYSC_GNU_BIN = ${NCSC_CDS_ROOT}/tools/cdsgcc/gcc/4.4/bin
+SYSC_GNU_LIB = ${NCSC_CDS_ROOT}/tools/cdsgcc/gcc/4.4/install/lib64
+SYSC_AR_EXTRA = 
+SYSC_GDB = ${NCSC_CDS_ROOT}/tools/bin/64bit/gdb
+
+VLOG_FILE_EXT = sv:v:vp:vh:vs
+VHDL_FILE_EXT = vhd:vhdl:VHD:VHDL:vhdp:VHDP
+
+NCSC_NCV_ARG = +loadsc+${NCTESTNAME} +ncsimargs+-loadcfc +ncsimargs+:cfcbootstrap
+NCSC_NCV_ARG_STATIC =  +ncsimargs+-loadcfc +ncsimargs+:cfcbootstrap
+NCSC_NCVHDL_COMPILE_ARG = 
+NCSC_NCVLOG_COMPILE_ARG = 
+NCSC_NCELAB_ARG = -loadsc ${NCTESTNAME}
+NCSC_NCELAB_ARG_STATIC = 
+NCSC_NCSIM_ARG = -loadcfc :cfcbootstrap
+
+{SECTION = COMPILE}
+#compiler prefixes
+CC_BIN_PREFIX =
+CXX_BIN_PREFIX =
+CC_LIB_PREFIX =
+CXX_LIB_PREFIX =
+
+NCSC_CC = gcc
+CC = gcc
+NCSC_CXX = ncsc -COMPILER ${SYSC_GNU_BIN}/g++ 
+CXX = ${SYSC_GNU_BIN}/g++
+NCSC_CC = ${SYSC_GNU_BIN}/gcc
+CC = ${SYSC_GNU_BIN}/gcc
+AR = ar
+AROPTS = cru
+
+LINKER = ${SYSC_GNU_BIN}/g++
+LD = ld
+AS = $CC
+
+#compiler options
+CC_PIC_OPT = -fPIC
+CXX_PIC_OPT = -fPIC
+CC_COMPILE_OPT = -c
+CXX_COMPILE_OPT = -c
+CC_DEBUG_OPT =
+CXX_DEBUG_OPT = -O0 -g
+CC_INCLUDE_OPT = -I
+CXX_INCLUDE_OPT = -I
+CC_DEP_OPT = -M -MMD
+CXX_DEP_OPT = -M -MMD
+DEP_FILE_EXTENSION = d
+NCSC_CC_OPTS = -x c 
+NCSC_CXX_OPTS = -x c++  -iquote $UVM_ML_HOME/ml/frameworks/uvm/sc/ ${UVM_ML_CXX_OPTS}
+NCSC_CC_WARN = -Wall
+NCSC_CXX_WARN = -Wall
+LINKER_SHARED_LIB_OPT = -L/lib64 -lrt -shared -Wl,-rpath,${NCSC_CDS_ROOT}/tools/lib/64bit:${SYSC_LIB_PREFIX}:${NCSC_CDS_ROOT}/tools/uvm/uvm_lib/uvm_sc/lib/64bit
+LINKER_LIB_DIR_OPT = -L
+LINKER_LIB_OPT = -l
+DPI_COMP_OPTIONS = -fPIC
+DPI_LINK_OPTIONS =
+
+#Static link options
+NC_LD_ARGS      = -fPIC -rdynamic
+NC_SYSTEM_LIBS = -L/lib64 -ldl -lm -lrt -L${NCSC_CDS_ROOT}/tools/lib/64bit
+CVE_LIBS        = -L${NCSC_CDS_ROOT}/tools/cdsgcc/gcc/4.4/install/lib64 -lstdc++ -lgcc_s -L${NCSC_CDS_ROOT}/tools/lib -L${NCSC_CDS_ROOT}/tools/tbsc/lib/64bit/gnu/4.4 -L${NCSC_CDS_ROOT}/tools/lib/64bit/SuSE -Wl,-rpath,${NCSC_CDS_ROOT}/tools/lib/64bit:${NCSC_CDS_ROOT}/tools/tbsc/lib/64bit/gnu/4.4:${NCSC_CDS_ROOT}/tools/lib/64bit/SuSE:${SYSC_GNU_LIB} -ltbsc -lscv -lbfd-2.17.50.0.12
+
+CVE_LIB_PATH    = lib/64bit/gnu/4.4
+VIC_LIBS        = -L${NCSC_CDS_ROOT}/tools/vic/lib/64bit/gnu/4.4 -Wl,-rpath,${NCSC_CDS_ROOT}/tools/vic/lib/64bit/gnu/4.4 -lvicutil -lvic
+VIC_LIB_PATH    = lib/64bit/gnu/4.4
+
+NCELAB_STATIC_LD_ARGS =  \
+           ${NCSC_CDS_ROOT}/tools/inca/lib/64bit/ncelab.o  \
+           %%{CXX_MAIN_OBJ}                                 \
+           %%{OBJ_CC_FILES}                                 \
+           %%{OBJ_CXX_FILES}                                \
+           %%{OBJ_AS_FILES}                                 \
+           %%{OBJ_SAFE_FILES}                               \
+           %%{USER_LD_ARGS}                                 \
+           -L${SYSC_GNU_LIB} -lstdc++ -lgcc_s \
+	   -L${NCSC_CDS_ROOT}/tools/lib/64bit          \
+           -L${SYSC_LIB_PREFIX} -Wl,-rpath,${NCSC_CDS_ROOT}/tools/lib/64bit:${SYSC_LIB_PREFIX}:${NCSC_CDS_ROOT}/tools/uvm/uvm_lib/uvm_sc/lib/64bit -lsystemc_sh -lscBootstrap_sh -lncscCoroutines_sh -lovm -lncsctlm2_sh -L${NCSC_CDS_ROOT}/tools/uvm/uvm_lib/uvm_sc/lib/64bit -luvm \
+           ${NC_LD_ARGS}                                   \
+           ${NC_SYSTEM_LIBS}                                   \
+           %%{EFENCE_LIBS} -L${NCSC_CDS_ROOT}/tools/inca/lib/64bit -lvoids
+
+NCELAB_STATIC_LD_ARGS_ARCHIVE = \
+           ${NCSC_CDS_ROOT}/tools/inca/lib/64bit/ncelab.o  \
+           %%{CXX_MAIN_OBJ}                                 \
+           %%{OBJ_CC_FILES}                                 \
+           %%{OBJ_CXX_FILES}                                \
+           %%{OBJ_AS_FILES}                                 \
+           %%{OBJ_SAFE_FILES}                               \
+           ${SYSC_LIB_PREFIX}/sc_fpi_nc.o ${SYSC_LIB_PREFIX}/ncscpi.o            \
+           %%{USER_LD_ARGS}                                 \
+           -L${NCSC_CDS_ROOT}/tools/lib/64bit          \
+           -L${SYSC_LIB_PREFIX} -lsystemc_ar \
+           ${NC_LD_ARGS}                                   \
+           ${NC_SYSTEM_LIBS}                                   \
+           %%{EFENCE_LIBS} -L${NCSC_CDS_ROOT}/tools/inca/lib/64bit -lvoids
+
+NCSIM_STATIC_LD_ARGS = \
+           ${NCSC_CDS_ROOT}/tools/inca/lib/64bit/ncsim.o    \
+           %%{CXX_MAIN_OBJ}                                 \
+           %%{OBJ_CC_FILES}                                  \
+           %%{OBJ_CXX_FILES}                                 \
+           %%{OBJ_AS_FILES}                                  \
+           %%{OBJ_SAFE_FILES}                                \
+           %%{USER_LD_ARGS}                                  \
+           -L${SYSC_GNU_LIB} -lstdc++ -lgcc_s \
+	   -L${NCSC_CDS_ROOT}/tools/lib/64bit          \
+           -L${SYSC_LIB_PREFIX} -Wl,-rpath,${NCSC_CDS_ROOT}/tools/lib/64bit:${SYSC_LIB_PREFIX}:${NCSC_CDS_ROOT}/tools/uvm/uvm_lib/uvm_sc/lib/64bit -lsystemc_sh -lscBootstrap_sh -lncscCoroutines_sh -lovm -lncsctlm2_sh -L${NCSC_CDS_ROOT}/tools/uvm/uvm_lib/uvm_sc/lib/64bit -luvm \
+           -L${NCSC_CDS_ROOT}/tools/lib/64bit -ludm   \
+           ${NC_LD_ARGS}                                     \
+           ${NC_SYSTEM_LIBS}                                          \
+           %%{EFENCE_LIBS} -L${NCSC_CDS_ROOT}/tools/inca/lib/64bit -lvoids
+
+NCSIM_STATIC_LD_ARGS_ARCHIVE = \
+           ${NCSC_CDS_ROOT}/tools/inca/lib/64bit/ncsim.o    \
+           %%{CXX_MAIN_OBJ}                                 \
+           %%{OBJ_CC_FILES}                                  \
+           %%{OBJ_CXX_FILES}                                 \
+           %%{OBJ_AS_FILES}                                  \
+           %%{OBJ_SAFE_FILES}                                \
+           ${SYSC_LIB_PREFIX}/sc_fpi_nc.o ${SYSC_LIB_PREFIX}/ncscpi.o            \
+           %%{USER_LD_ARGS}                                  \
+           -L${NCSC_CDS_ROOT}/tools/lib/64bit          \
+           -L${SYSC_LIB_PREFIX} -lsystemc_ar \
+           -L${NCSC_CDS_ROOT}/tools/lib/64bit -ludm   \
+           ${NC_LD_ARGS}                                     \
+           ${NC_SYSTEM_LIBS}                                          \
+           %%{EFENCE_LIBS} -L${NCSC_CDS_ROOT}/tools/inca/lib/64bit -lvoids
+
+NCSC_NCV_TEST_LD_ARGS = 
+NCSC_NCV_TEST_LD_ARGS_SUFFIX =  -shared
+NCSC_NCVHDL_TEST_LD_ARGS = 
+NCSC_NCVHDL_TEST_LD_ARGS_SUFFIX =  -shared
+NCSC_LD_ARGS = 
+NCSC_NCV_TEST_LD_ARGS_ARCHIVE = ${SYSC_LIB_PREFIX}/sc_fpi_nc.o ${SYSC_LIB_PREFIX}/ncscpi.o
+NCSC_NCVHDL_TEST_LD_ARGS_ARCHIVE = ${SYSC_LIB_PREFIX}/sc_fpi_nc.o ${SYSC_LIB_PREFIX}/ncscpi.o
+
+#file extensions
+CC_FILE_EXT = c
+CXX_FILE_EXT = cc:cpp:C
+HH_FILE_EXT = h:hh
+OBJ_FILE_EXT = a:o:so
+AS_FILE_EXT = s
+SH_LIB_EXT = so
+
+PURIFYPLUS_NC_OPTIONS = -ignore-signals=SIGSEGV,SIGILL,SIGPOLL,SIGEMT -linker=${NCSC_CDS_ROOT}/tools/cdsgcc/gcc/4.4/install/bin/ld -recursion-depth-limit=0
+
+{TOOLS}
+#other tools
+PERL = /usr/local/bin/perl 
+
+NCSC_MAKE = make 
+
+SH = /bin/sh
+STD_BIN_DIR = /usr/bin

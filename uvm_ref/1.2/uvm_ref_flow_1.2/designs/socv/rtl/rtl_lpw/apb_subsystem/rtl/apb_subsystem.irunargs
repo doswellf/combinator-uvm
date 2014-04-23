@@ -1,0 +1,37 @@
+
+//Design files
+apb_subsystem_0.v
+apb_subsystem_1.v
+
+alut_veneer.v
+
+gpio_veneer.v
+ttc_veneer.v
+smc_veneer.v
+power_ctrl_veneer.v
+
+//for ahb2apb bridge
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/ahb2apb/rtl/ahb2apb.irunargs
+
+//for alut 
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/alut/rtl/alut.irunargs
+
+//for spi
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/opencores/oc_spi.irunargs
+
+// Opencores UART
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/opencores/oc_uart.irunargs
+
+//for gpio
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/gpio/rtl/gpio_lite.irunargs
+
+//for ttc
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/ttc/rtl/ttc_lite.irunargs
+       
+
+//for smc
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/smc/rtl/smc_lite.irunargs
+
+//for power control
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/power_ctrl/rtl/power_ctrl.irunargs
+

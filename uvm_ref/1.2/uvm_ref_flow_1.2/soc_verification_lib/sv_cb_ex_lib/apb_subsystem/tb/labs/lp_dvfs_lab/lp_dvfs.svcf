@@ -1,0 +1,154 @@
+# SimVision Command Script (Wed Jun 23 15:51:16 IST 2010)
+#
+# Version 09.20.s020
+#
+# You can restore this configuration with:
+#
+#     simvision -input simvision.svcf
+#
+
+
+#
+# Preferences
+#
+preferences set toolbar-SimControl-WatchList {
+  usual
+  hide set_break
+  hide vplan
+}
+preferences set user-toolbar-list {WatchList {}}
+preferences set toolbar-OperatingMode-WaveWindow {
+  usual
+  position -pos 4
+  name OperatingMode
+}
+preferences set plugin-enable-groupscope 0
+preferences set plugin-enable-interleaveandcompare 0
+
+#
+# PPE data
+#
+array set dbNames ""
+set dbNames(realName1) [database require waves -search {
+	./waves.shm/waves.trn
+}]
+
+#
+# Groups
+#
+catch {group new -name {Power Domains} -overlay 0}
+catch {group new -name {Mode Transition Enables} -overlay 0}
+catch {group new -name {Active State Enables} -overlay 0}
+
+group using {Power Domains}
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+    simulator::apb_subsystem_top.i_apb_subsystem.PDcore \
+    simulator::apb_subsystem_top.i_apb_subsystem.PDsmc \
+    simulator::apb_subsystem_top.i_apb_subsystem.PDurt
+
+group using {Mode Transition Enables}
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.mte_smc_start \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.mte_pm_smc_to_default_start \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.mte_uart_start \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.mte_pm_uart_to_default_start \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.mte_smc_uart_start \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.mte_pm_smc_uart_to_default_start
+
+group using {Active State Enables}
+group set -overlay 0
+group set -comment {}
+group clear 0 end
+
+group insert \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.ase_core_10v \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.ase_core_12v \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.ase_smc_12v \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.ase_uart_10v \
+    simulator::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl.ase_uart_12v
+
+#
+# Cursors
+#
+set time 157950000ps
+if {[catch {cursor new -name  TimeA -time $time}] != ""} {
+    cursor set -using TimeA -time $time
+}
+cursor set -using TimeA -marching 1
+
+#
+# Mnemonic Maps
+#
+mmap new -reuse -name {Boolean as Logic} -radix %b -contents {
+{%c=FALSE -edgepriority 1 -shape low}
+{%c=TRUE -edgepriority 1 -shape high}
+}
+mmap new -reuse -name {Example Map} -radix %x -contents {
+{%b=11???? -bgcolor orange -label REG:%x -linecolor yellow -shape bus}
+{%x=1F -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=2C -bgcolor red -label ERROR -linecolor white -shape EVENT}
+{%x=* -label %x -linecolor gray -shape bus}
+}
+
+#
+# Design Browser windows
+#
+if {[catch {window new browser -name "Design Browser 1" -geometry 700x500+16+34}] != ""} {
+    window geometry "Design Browser 1" 700x500+16+34
+}
+window target "Design Browser 1" on
+browser using "Design Browser 1"
+browser set -scope  waves::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl 
+browser yview see  waves::apb_subsystem_top.i_apb_subsystem.i_power_ctrl_veneer.i_power_ctrl 
+browser timecontrol set -lock 0
+
+#
+# Waveform windows
+#
+if {[catch {window new WaveWindow -name "Waveform 1" -geometry 1226x833+32+9}] != ""} {
+    window geometry "Waveform 1" 1226x833+32+9
+}
+window target "Waveform 1" on
+waveform using {Waveform 1}
+waveform sidebar select power
+waveform set \
+    -primarycursor TimeA \
+    -signalnames name \
+    -signalwidth 211 \
+    -units ps \
+    -valuewidth 134
+cursor set -using TimeA -time 157,950,000ps
+cursor set -using TimeA -marching 1
+waveform baseline set -time 0
+
+
+set groupId0 [waveform add -groups {{Power Domains}}]
+
+
+set groupId0 [waveform add -groups {{Mode Transition Enables}}]
+waveform hierarchy collapse $groupId0
+
+
+set groupId0 [waveform add -groups {{Active State Enables}}]
+
+
+waveform xview limits 20293316ps 40671724ps
+
+#
+# Waveform Window Links
+#
+
+#
+# Console windows
+#
+console set -windowname Console
+window geometry Console 700x250+16+564
+

@@ -1,0 +1,100 @@
+# ----------------------------------------------------------------------
+#    Copyright 2012 Cadence Design Systems, Inc.
+#    All Rights Reserved Worldwide
+# 
+#    Licensed under the Apache License, Version 2.0 (the
+#    "License"); you may not use this file except in
+#    compliance with the License.  You may obtain a copy of
+#    the License at
+# 
+#        http://www.apache.org/licenses/LICENSE-2.0
+# 
+#    Unless required by applicable law or agreed to in
+#    writing, software distributed under the License is
+#    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+#    CONDITIONS OF ANY KIND, either express or implied.  See
+#    the License for the specific language governing
+#    permissions and limitations under the License.
+# ----------------------------------------------------------------------
+LIB_NAME=$(TARGETS_$(ARCH))
+STATIC_LIB_NAME=$(STATIC_$(ARCH))
+TARGETS_lnx86 = libuvm_sc_ml.so
+STATIC_lnx86 = libuvm_sc_ml.a
+UVM_ML_COMPILER_VERSION ?= $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh $(UVM_ML_CC))
+ifeq ($(BITS),64)
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/ncsc/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)/64bit
+BIT_FLAGS=-m64
+BEXT=.ncsc.$(IES_VERSION).$(UVM_ML_COMPILER_VERSION).64
+else
+LIB_BUILD_DIR ?= $(UVM_ML_HOME)/ml/libs/ncsc/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)
+BIT_FLAGS=-m32
+BEXT=.ncsc.$(IES_VERSION).$(UVM_ML_COMPILER_VERSION)
+endif
+
+TARGET_LIB = $(LIB_BUILD_DIR)/$(LIB_NAME)
+STATIC_LIB = $(LIB_BUILD_DIR)/$(STATIC_LIB_NAME)
+
+UVM_SC=$(UVM_ML_HOME)/ml/frameworks/uvm/sc/
+
+
+DEBUG_FLAGS ?= 
+
+UVM_SC_ML ?= $(UVM_ML_HOME)/ml/adapters/uvm_sc
+
+UVM_ML_OBJS = \
+	   $(UVM_SC_ML)/common/uvm_ml_packer$(BEXT).o \
+	   $(UVM_SC_ML)/common/uvm_ml_adapter$(BEXT).o \
+	   $(UVM_SC_ML)/common/uvm_ml_hierarchy$(BEXT).o \
+	   $(UVM_SC_ML)/common/uvm_ml_phase$(BEXT).o \
+	   $(UVM_SC_ML)/common/uvm_ml_config_rsrc$(BEXT).o \
+	   $(UVM_SC_ML)/common/ml_tlm2/ml_tlm2$(BEXT).o
+
+
+DEPFILES= $(subst .o,.d,$(UVM_ML_OBJS))
+
+
+
+SYSTEMC_HEADERS ?= `ncroot`/tools/systemc/include
+TLM2_HEADERS ?= `ncroot`/tools/systemc/include/tlm2
+TOOLS_INCLUDE ?= `ncroot`/tools/include
+
+LDOPTS = -fPIC -shared $(BIT_FLAGS)
+
+CFLAGS = -DIES_VERSION_$(subst .,_,$(IES_VERSION)) -fPIC $(BIT_FLAGS)  -I$(UVM_SC) -I$(UVM_SC)/base -I$(UVM_SC)/ncsc/$(IES_VERSION)  -I$(UVM_SC)/base/ncsc -I$(UVM_SC)/base/ncsc/$(IES_VERSION) -I$(TOOLS_INCLUDE) -I$(SYSTEMC_HEADERS)  -I$(UVM_SC_ML) -I$(UVM_ML_HOME)/ml/backplane -I$(UVM_SC_ML) -I$(UVM_SC_ML)/ncsc  -I$(TLM2_HEADERS)
+
+.PHONY: default
+default : $(LIB_BUILD_DIR) $(TARGET_LIB) $(STATIC_LIB)
+
+
+
+$(LIB_BUILD_DIR):
+	mkdir -p $@
+
+$(TARGET_LIB) :  $(UVM_ML_OBJS) 
+	$(UVM_ML_LD) $(UVM_ML_OBJS) $(LDOPTS) -o $@
+$(STATIC_LIB): $(UVM_ML_OBJS)
+	ar cvr $@ $^
+
+%$(BEXT).o: %.cpp 
+	$(UVM_ML_CC)   $(CFLAGS) $(DEBUG_FLAGS) -c $< -o $@
+
+# FIXME: move the 'gch' stuff into a separate Makefile that will include Makefile.uvm 
+
+
+%$(BEXT).d: %.cpp
+	$(UVM_ML_CC) $(CFLAGS) $(DEBUG_FLAGS) -o $@ -MM -MQ $(subst .d,.o,$@) $<
+
+
+clean: 
+	-rm -f  $(TARGET_LIB) $(STATIC_LIB) $(UVM_ML_OBJS) $(DEPFILES)
+
+ifeq ($(MAKECMDGOALS),)
+GOALS=default
+else
+GOALS=$(MAKECMDGOALS)
+endif
+
+
+ifneq ($(words $(filter-out clean,$(GOALS))),0)
+include $(DEPFILES)
+endif

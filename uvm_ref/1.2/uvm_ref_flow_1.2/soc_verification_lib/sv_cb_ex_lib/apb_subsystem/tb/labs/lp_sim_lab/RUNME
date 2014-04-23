@@ -1,0 +1,14 @@
+#!/bin/csh -f
+
+if ( $?UVM_HOME == 0 ) then
+setenv UVM_HOME `ncroot`/tools/uvm-1.1
+else 
+setenv UVM_HOME ${UVM_HOME}
+endif
+
+irun -gui -uvmhome ${UVM_HOME} -noassert -run   -covoverwrite -lps_stime 15000 -lps_verify -lps_logfile lps.log -noassert  \
+     -simvisargs '-input ${MY_WORK_AREA}/sim_lab/lp_debug.svcf' \
+     -lps_cpf ${MY_WORK_AREA}/sim_lab/testbench.cpf -errormax 1 \
+     -f ${SOCV_KIT_HOME}/soc_verification_lib/sv_cb_ex_lib/apb_subsystem/tb/scripts/run_lp.f \
+     +UVM_TESTNAME=lp_shutdown_urt1
+     

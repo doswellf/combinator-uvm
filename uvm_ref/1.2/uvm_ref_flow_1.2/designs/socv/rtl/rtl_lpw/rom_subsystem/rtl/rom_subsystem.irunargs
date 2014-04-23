@@ -1,0 +1,5 @@
+rom_response_gen.v
+rom_subsystem.v
+
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/mem_wrap/rtl/ROM_SP_512x32_wrap.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/misc/rtl/generic_sram.v

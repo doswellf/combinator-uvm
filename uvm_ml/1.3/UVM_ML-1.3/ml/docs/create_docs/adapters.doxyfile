@@ -1,0 +1,12 @@
+PROJECT_NAME           = "UVM-ML"
+INPUT                  = ./uvm_sc_adapter 
+OUTPUT_DIRECTORY       = ../html_docs/uvm_sc_adapter
+HTML_OUTPUT            = ./
+FILE_PATTERNS          = *.h *.cpp
+RECURSIVE              = YES
+SHOW_DIRECTORIES       = YES
+GENERATE_LATEX         = NO
+SOURCE_BROWSER         = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+VERBATIM_HEADERS       = NO
+EXCLUDE                = ./uvm_sc_adapter/common/tlm2_osci_patch/tlm_h/tlm_generic_payload/tlm_gp.h ./uvm_sc_adapter/common/ml_tlm2/ml_tlm2_internals.h

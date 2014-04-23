@@ -1,0 +1,9 @@
+set_cpf_version 1.1
+set_hierarchy_separator "/"
+
+set_design apb_subsystem_top -testbench
+
+set_instance i_apb_subsystem
+source $env(MY_WORK_AREA)/dvfs_lab/apb_subsystem.cpf
+
+end_design

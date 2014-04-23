@@ -1,0 +1,109 @@
+//----------------------------------------------------------------------
+//   Copyright 1999-2010 Cadence Design Systems, Inc.
+//   All Rights Reserved Worldwide
+//
+//   Licensed under the Apache License, Version 2.0 (the
+//   "License"); you may not use this file except in
+//   compliance with the License.  You may obtain a copy of
+//   the License at
+//
+//       http://www.apache.org/licenses/LICENSE-2.0
+//
+//   Unless required by applicable law or agreed to in
+//   writing, software distributed under the License is
+//   distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+//   CONDITIONS OF ANY KIND, either express or implied.  See
+//   the License for the specific language governing
+//   permissions and limitations under the License.
+//----------------------------------------------------------------------
+
+// uart_transmitter
+vunit uart_transmitter_property(uart_transmitter) {
+
+`ifdef UART_ABV_ON
+
+// Following ifndef to define a default clock is used to work around 
+// use of # delays in uart transmitter rtl
+ 
+`ifndef DYNAMIC_SIM
+// psl default clock = (posedge clk);
+`else
+assign #1 clk2 = clk;
+// psl default clock = (posedge clk2);
+
+`endif
+
+// psl core_smc_not_enabled : assert always 
+// ( { !enable} |=> {tstate == prev(tstate)} )
+// abort (wb_rst_i);
+
+
+// If TX is enabled, but tf_count is zero, state m/c stays in s_idle state
+// psl core_s_idle : assert always 
+// ( { enable && (tf_count == 0) && (tstate == s_idle) } |=> {tstate == s_idle} )
+// abort (wb_rst_i);
+
+
+
+// If TX is enabled, and tx_count is non zero, state m/c goes from "s_idle" to "s_pop_byte" state
+// psl core_s_idle_to_s_pop_byte : assert always 
+// ( { enable && (tf_count != 0) && (tstate == s_idle) } |=> 
+//   {tstate == s_pop_byte} )
+// abort (wb_rst_i);
+
+
+// IF TX is enabled, and if current state is "s_pop_byte", next state will be "s_send_start"
+// psl core_s_pop_byte_to_s_send_start : assert always 
+// ( { enable && (tstate == s_pop_byte) } |=> 
+//   {tstate == s_send_start} )
+// abort (wb_rst_i);
+
+// If current state is "s_pop_byte",  "tf_pop" becomes high in next cycle
+// psl core_tf_pop_high : assert always 
+// ( { enable && (tstate == s_pop_byte) } |=> 
+//   {tf_pop} )
+// abort (wb_rst_i);
+
+// If current state is "s_send_start", "tf_pop" should be  low in next cycle
+// psl core_tf_pop_low : assert always 
+// ( { enable && (tstate == s_send_start) } |=> 
+//   {~tf_pop} )
+// abort (wb_rst_i);
+
+// If current state is s_send_start, next state is "s_send_byte" after 16 cycles
+// psl core_s_send_start_to_s_send_byte : assert always 
+// ( { enable && (tstate == s_send_start) && (counter == 5'b00001)  } |=> 
+//   {tstate == s_send_byte}  )
+// abort (wb_rst_i);
+
+// psl assume always (lcr[6] == 0);
+
+// If current state has changed to  "s_send_start" in current cycle, stx_o_tmp,stx_pad_o   
+// will be low for 16 cycles
+// psl output_stx_pad_o_low : assert always 
+// ( ( enable && (tstate == s_send_start) && (prev(tstate) == s_pop_byte) 
+//     && ~lcr[`UART_LC_BC] ) ->  ( next[16] (~stx_pad_o) ) )
+// abort (wb_rst_i);
+
+
+// If current state is s_idle, stx_pad_o should be 1
+// psl core_stx_pad_o_high : assert always 
+// ( { enable && (tstate == s_idle) && ~lcr[`UART_LC_BC] } |=> 
+//   {stx_pad_o} )
+// abort (wb_rst_i);
+
+
+// tf_pop is always of one clock cycle
+// psl core_tf_pop_pulse : assert always
+// ( {tf_pop && enable } |=> {~tf_pop})
+// abort (wb_rst_i);
+
+// If tf_count is zero, tf_pop should be zero
+// psl core_tf_count_zero : assert always
+// ( { (tf_count == 0)  }|-> {~tf_pop} )
+// abort (wb_rst_i);
+`endif
+
+}
+
+

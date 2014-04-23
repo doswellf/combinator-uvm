@@ -1,0 +1,54 @@
+A Practical Guide to Adopting the Universal Verification Methodology (UVM)
+--------------------------------------------------------------------------
+Chapter 7: Simple Testbench Integration
+--------------------------------------------------------------------------
+ Example 7-1: UART Controller Testbench
+ Example 7-2: UART Controller Testbench - Build Phase
+ Example 7-3: UART Controller Testbench - Connect Phase
+ Example 7-4: UART Controller Virtual Sequencer
+ Example 7-5: APB Configuration Class
+ Example 7-6: UART Configuration Class
+ Example 7-7: UART Controller Base Test
+ Example 7-8: UART Controller Test Derived from the Base Test
+ Example 7-9: UART Frame Data Item
+ Example 7-10: UART Controller Data Item Override Test
+ Example 7-11: UART Retry Sequence
+ Example 7-12: UART Nested Retry Sequence
+ Example 7-13: Directed Test - needs work
+ Example 7-14: Base Virtual Sequence with Objection Mechanism
+ Example 7-15: UART Controller Virtual Sequence
+
+ #  UART Controller Test without Virtual Sequence (NO DUT)
+ irun -f run.f tb/uart_ctrl_test.sv +UVM_TESTNAME=u2a_a2u_rand_test
+
+ #  UART Controller Test with Virtual Sequence (NO DUT)
+ irun -f run.f tb/uart_ctrl_test.sv +UVM_TESTNAME=u2a_a2u_vseq_test
+
+==============================================================================
+Each example file has a header with instructions on how to run the testcase.
+
+In general, examples in this directory can be run on IUS using the following command:
+
+  %  irun -uvm <filename>
+
+OR:
+
+  %  irun -incdir $UVM_HOME/src <filename>
+
+To run the complete testbench:
+
+UART Controller Test without Virtual Sequence (NO DUT):
+
+ %  irun -f run.f tb/uart_ctrl_test.sv +UVM_TESTNAME=u2a_a2u_rand_test
+
+UART Controller Test with Virtual Sequence (NO DUT):
+
+ %  irun -f run.f tb/uart_ctrl_test.sv +UVM_TESTNAME=u2a_a2u_vseq_test
+
+You can also execute the simple testbench example when executing the following
+command:
+
+  % run_simple.sh
+
+The following is to run all examples in this directory at once:
+  %  run_all.sh

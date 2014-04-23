@@ -1,0 +1,9 @@
+apb_to_uart_1stopbit      extends uvm_test
+apb_uart_rx_tx            extends uvm_test
+apb_uart_rx_tx_data_aa    extends apb_uart_rx_tx
+uart_data_automation_lab1 extends apb_uart_rx_tx
+error_reg_seq_test        extends uvm_test
+uart_bad_parity_test      extends uvm_test
+uart_incr_payload_test    extends uvm_test
+uart_apb_incr_data        extends uvm_test
+uart_txrx_fifo_cov        extends uvm_test

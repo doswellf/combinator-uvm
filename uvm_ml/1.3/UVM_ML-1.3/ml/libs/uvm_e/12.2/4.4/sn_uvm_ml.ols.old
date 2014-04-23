@@ -1,0 +1,23 @@
+#########################################
+# File: /home/alexch/babelfish/20131113/babeldag/ml/libs/uvm_e/12.2/4.4/sn_uvm_ml.ols
+# 
+# Generated automatically on
+#      Wed Nov 13 12:02:35 IST 2013
+# by 'sn_compile.sh' utility
+#########################################
+
+libspecman=${SPECMAN_DIR}/libspecman.a;
+libspecman_pic=${SPECMAN_DIR}/specman_all_pic_.o;
+libspecman_shared=${SPECMAN_DIR}/libsn.so;
+export libspecman libspecman_pic libspecman_shared;
+
+SPECMAN_MAIN=/home/alexch/babelfish/20131113/babeldag/ml/libs/uvm_e/12.2/4.4/sn_tmp_dir/sn_uvm_ml__main_pic_.o;
+export SPECMAN_MAIN;
+__ALL_SN_LINK_OBJECTS="/home/alexch/babelfish/20131113/babeldag/ml/libs/uvm_e/12.2/4.4/sn_tmp_dir/sn_uvm_ml_adapter_pic_.o /home/alexch/babelfish/20131113/babeldag/ml/libs/uvm_e/12.2/4.4/sn_tmp_dir/sn_uvm_ml__pic_.o ";
+export __ALL_SN_LINK_OBJECTS
+__PIC=TRUE; export __PIC
+OLS_ARCH=linux;
+OLS_APPLICATION="specman";
+export OLS_APPLICATION
+__CREATED_SHARED_LIB=TRUE; export __CREATED_SHARED_LIB
+__SHARED_LIB="-L/home/alexch/babelfish/20131113/babeldag/ml/libs/uvm_e/12.2/4.4 -lsn_sn_uvm_ml"; export __SHARED_LIB

@@ -1,0 +1,2 @@
+-define FV_KIT_NO_AHB_UVC
+-define FV_KIT_NO_APB_UVC

@@ -1,0 +1,205 @@
+## 
+## -------------------------------------------------------------
+##    Copyright 2013 Cadence.
+##    All Rights Reserved Worldwide
+## 
+##    Licensed under the Apache License, Version 2.0 (the
+##    "License"); you may not use this file except in
+##    compliance with the License.  You may obtain a copy of
+##    the License at
+## 
+##        http://www.apache.org/licenses/LICENSE-2.0
+## 
+##    Unless required by applicable law or agreed to in
+##    writing, software distributed under the License is
+##    distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR
+##    CONDITIONS OF ANY KIND, either express or implied.  See
+##    the License for the specific language governing
+##    permissions and limitations under the License.
+## -------------------------------------------------------------
+## 
+ifndef UVM_ML_LD
+UVM_ML_LD:=$(UVM_ML_CC)
+endif
+
+ifdef OSCI_INSTALL
+ifndef OSCI_VERSION
+OSCI_VERSION := $(shell ${UVM_ML_HOME}/ml/tools/get_osci_version.sh)
+endif
+else
+-include ${UVM_ML_HOME}/ml/tests/osci_version.mk
+endif
+export OSCI_VERSION
+
+ifndef IES_VERSION
+IES_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_ies_version.sh)
+endif
+export IES_VERSION
+
+ifndef UVM_ML_COMPILER_VERSION
+UVM_ML_COMPILER_VERSION := $(shell $(UVM_ML_HOME)/ml/tools/get_gcc_version.sh $(UVM_ML_CC))
+endif
+
+
+
+TEST ?= /usr/bin/test
+QUESTA_LOG_FILE ?= questa_osci_proc.$(BITS).log
+QUESTA_COMP_LOG_FILE ?= questa_comp.$(BITS).log
+UVM_HOME := $(UVM_ML_HOME)/ml/frameworks/uvm/sv/uvm-1.1c
+export UVM_HOME
+
+BITS ?= 64
+
+ifeq ($(BITS),64)
+SUBDIR=/64bit
+BIT_OPTION=-64
+SN_BIT_FLAG=-64
+BIT_CFLAGS=-fPIC
+BEXT=.64
+ALL_OSCI_LIB=liball_osci_questa.64.so
+else
+SUBDIR=
+BIT_OPTION=
+SN_BIT_FLAG=
+BIT_CFLAGS=-m32
+BEXT=
+ALL_OSCI_LIB=liball_osci_questa.so
+endif
+
+
+UVM_ML_OVERRIDE=${UVM_ML_HOME}/ml/libs/backplane/${UVM_ML_COMPILER_VERSION}${SUBDIR}
+export UVM_ML_OVERRIDE
+
+QUESTA_TIME_SCALE= -timescale 1ns/1ns
+
+QUESTA_VLOG_OPTS=$(BIT_OPTION) -suppress 2218,2181 \
++define+USE_UVM_ML_RUN_TEST \
++incdir+${UVM_HOME}/src \
++incdir+${UVM_HOME} \
++incdir+${UVM_HOME}/tlm2 \
++incdir+${UVM_HOME}/base \
++incdir+. \
++incdir+${UVM_HOME}/macros \
++incdir+${UVM_ML_HOME}/ml/adapters/uvm_sv \
+-sv +acc -l ${QUESTA_COMP_LOG_FILE} ${QUESTA_TIME_SCALE}
+
+
+
+
+
+QUESTA_VSIM_OPTS=${INPUT_CMD} $(BIT_OPTION)  -sv_lib ./libuvm_dpi${BEXT}  -gblso ${UVM_ML_HOME}/ml/libs/backplane/${UVM_ML_COMPILER_VERSION}${SUBDIR}/libuvm_ml_bp.so -sv_lib ${UVM_ML_HOME}/ml/libs/uvm_sv/${UVM_ML_COMPILER_VERSION}${SUBDIR}/libuvm_sv_ml -gblso  ${UVM_ML_HOME}/ml/libs/uvm_sv/${UVM_ML_COMPILER_VERSION}${SUBDIR}/libuvm_sv_ml.so $(SYSTEMC_LIB_OPTS) $(SPECMAN_BOOT_LIB) -l ${QUESTA_LOG_FILE}  ${EXTRA_VSIM_ARGS}
+
+UVM_ML_MODULES ?=  $(UVM_ML_HOME)/ml/adapters/uvm_sv/uvm_ml_adapter.sv
+BACKPLANE_LIB ?= $(UVM_ML_HOME)/ml/libs/backplane/${UVM_ML_COMPILER_VERSION}$(SUBDIR)/libuvm_ml_bp.so
+
+ifneq ($(SYSC_FILES),)
+
+SYSTEMC_LIB_OPTS= -gblso ${ALL_OSCI_LIB}  -sv_lib ${UVM_ML_HOME}/ml/libs/osci/${OSCI_VERSION}/$(UVM_ML_COMPILER_VERSION)${SUBDIR}/libuvm_sc_fw_osci -sv_lib ${UVM_ML_HOME}/ml/libs/osci/${OSCI_VERSION}/$(UVM_ML_COMPILER_VERSION)${SUBDIR}/libuvm_sc_ml_osci
+endif 
+
+UVM_DPI_LIB=./libuvm_dpi$(BEXT).so
+
+
+
+ifneq ($(HAS_E),)
+SPECMAN_STUB_FILE ?= specman.sv
+SPECMAN_HOME = $(shell sn_root -home)
+SPECMAN_DIR = $(shell sn_root $(SN_BIT_FLAG) -dir)
+SPECMAN_INPUT_FILE = questa_input.do
+INPUT_CMD = -c 
+INPUT_SUFFIX= < $(SPECMAN_INPUT_FILE)
+SPECMAN_TOP_ARGS = specman
+SPECMAN_BOOT_LIB=-pli ${SPECMAN_DIR}/libmti_sv_sn_boot.so -sv_lib ${SPECMAN_DIR}/libmti_sv_sn_boot -dpioutoftheblue 1
+
+ifndef UVM_ML_E_ADAPTER_LOCATION
+UVM_ML_E_ADAPTER_LOCATION:=$(UVM_ML_HOME)/ml/libs/uvm_e
+endif
+
+ifneq ($(E_FILES),)
+SPECMAN_DLIB := ./libsn_top.so
+SPECMAN_PATH := $(UVM_ML_E_ADAPTER_LOCATION)/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR):$(SPECMAN_PATH)
+else
+SPECMAN_DLIB := $(UVM_ML_E_ADAPTER_LOCATION)/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR)/libsn_sn_uvm_ml.so
+SPECMAN_PATH := $(UVM_ML_E_ADAPTER_LOCATION)/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR):$(SPECMAN_PATH)
+endif
+export SPECMAN_DLIB SPECMAN_PATH
+else
+SPECMAN_STUB_FILE=
+SPECMAN_HOME=
+SPECMAN_DIR=
+SPECMAN_INPUT_FILE=
+INPUT_CMD=-c -do 'run -all; exit -f'
+INPUT_SUFFIX=
+SPECMAN_TOP_ARGS=
+SPECMAN_BOOT_LIB=
+SPECMAN_DLIB=
+
+endif
+ifneq ($(STUB_E_FILES),)
+SPECMAN_STUB_CMD = "load ${STUB_E_FILES}; write stub -mti_sv";
+else
+SPECMAN_STUB_CMD = "write stub -mti_sv";
+endif
+
+
+MTI_HOME ?= $(MODEL_TECH)
+
+
+.PHONY: default run prepare clean distclean
+
+ERROR_FLAG=0
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+
+ifeq ($(UVM_ML_HOME),)
+ERROR_FLAG=1
+$(warning ** UVM_ML_HOME variable is not defined **)
+endif
+
+ifeq ($(MTI_HOME),)
+ERROR_FLAG=1
+$(warning ** MTI_HOME variable is not defined **)
+endif
+
+endif
+endif
+
+default: run
+
+run: $(UVM_DPI_LIB) work prepare ${SPECMAN_INPUT_FILE} ${SPECMAN_DLIB}
+	vsim  $(QUESTA_VSIM_OPTS) $(TOP_ARGS) $(SPECMAN_TOP_ARGS) $(INPUT_SUFFIX)
+	grep -q -i -E '\[TEST_DONE\]|\*\* UVM TEST PASSED \*\*|^TEST PASSED|^# +TEST PASSED' $(QUESTA_LOG_FILE)
+	@$(TEST) $$(cat $(QUESTA_LOG_FILE) $(QUESTA_COMP_LOG_FILE) | grep -i -c -E 'TEST FAILED|\*ERROR|\*FATAL' ) -eq 0 
+work: 
+	vlib work
+prepare: ${SPECMAN_STUB_FILE}
+	vlog -dpicppinstall ${UVM_ML_CC} $(QUESTA_VLOG_OPTS) $(UVM_HOME)/src/uvm.sv $(UVM_ML_MODULES) ${SRC_FILES} ${SPECMAN_STUB_FILE}
+${UVM_DPI_LIB}: 
+	${UVM_ML_LD} ${BIT_CFLAGS} -fPIC -I${MTI_HOME}/include -shared -o $@ $(UVM_HOME)/src/dpi/uvm_dpi.cc
+${SPECMAN_DLIB}: ${E_FILES}
+	sn_compile.sh ${EXTRA_SN_COMPILE_ARGS} $(SN_BIT_FLAG) -s ${UVM_ML_E_ADAPTER_LOCATION}/$(IES_VERSION)/$(UVM_ML_COMPILER_VERSION)$(SUBDIR)/sn_uvm_ml ${E_FILES} -o $@ -shlib  
+specman.sv: ${E_FILES}
+	specman ${SN_BIT_FLAG} -c $(SPECMAN_STUB_CMD)
+questa_input.do: ${E_FILES}
+	echo "sn set uvm_ml" > $@
+	echo "run -all" >> $@
+	echo "exit -f" >> $@
+clean: 
+	-rm -rf work  ${TEST_SPECIFIC_LIBS} ${SPECMAN_STUB_FILE} questa_input.do ${ALL_OSCI_LIB} ${UVM_DPI_LIB} specman.sv
+distclean: clean
+	-rm -f *.log *.elog
+
+ifneq ($(MAKECMDGOALS),clean)
+ifneq ($(MAKECMDGOALS),distclean)
+ifneq ($(SYSC_FILES),)
+run: $(ALL_OSCI_LIB)
+LIBALL_OSCI_BACKPLANE_STUFF=""
+include $(UVM_ML_HOME)/ml/tests/Makefile.liball_osci
+endif
+endif
+endif
+
+ifeq ($(ERROR_FLAG),1)
+$(error ** One or more of vital environment variables are not defined **)
+endif

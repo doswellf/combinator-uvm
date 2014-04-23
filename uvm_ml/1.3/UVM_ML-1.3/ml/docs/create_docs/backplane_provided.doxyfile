@@ -1,0 +1,12 @@
+PROJECT_NAME           = "UVM-ML"
+INPUT                  = ./backplane/bp_provided.h ./backplane/bp_provided.cpp
+OUTPUT_DIRECTORY       = ../html_docs/bp_provided_API
+HTML_OUTPUT            = ./
+FILE_PATTERNS          = *.h
+RECURSIVE              = YES
+SHOW_DIRECTORIES       = YES
+GENERATE_LATEX         = NO
+SOURCE_BROWSER         = YES
+OPTIMIZE_OUTPUT_FOR_C  = YES
+VERBATIM_HEADERS       = NO
+MACRO_EXPANSION        = YES

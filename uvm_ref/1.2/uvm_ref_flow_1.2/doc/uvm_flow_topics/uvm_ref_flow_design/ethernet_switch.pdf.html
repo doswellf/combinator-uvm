@@ -1,0 +1,249 @@
+<html>
+<head>
+<title>Architectural Design Document of the Wireless Domain Kit SoC Segment Representative Design</title>
+<meta name="Subject" content="">
+<meta name="Keywords" content="">
+<meta name="Author" content="Alain Rabaeijs; Santhosh Kumar Amanna">
+<meta name="Creator" content="Acrobat PDFMaker 10.1 for Word">
+<meta name="Producer" content="Adobe PDF Library 10.0">
+<meta name="CreationDate" content="">
+</head>
+<body>
+<pre>
+UVM Reference Flow
+Design Overview
+
+UVM Reference Flow version 1.0
+December 2011
+
+Table of Contents
+Acronyms .......................................................................................................................................... 3
+Licenses, Terms and Conditions ...................................................................................................... 4
+Scope ............................................................................................................................................. 4
+Introduction ....................................................................................................................................... 4
+System AHB bus............................................................................................................................... 5
+
+December 2011
+
+2
+
+UVM Reference Flow version 1.0
+
+Acronyms
+Acronym
+
+Meaning
+
+AHB
+AMBA
+APB
+SoC
+IP
+MAC
+
+Advanced High Performance Bus
+Advanced Micro-controller Bus Architecture
+Advanced Peripheral Bus
+System On Chip
+Intellectual Property
+Media Access Controller
+
+UVM
+DMA
+
+Universal Verification Methodology
+Direct Memory Access
+
+December 2011
+
+3
+
+UVM Reference Flow version 1.0
+
+Licenses, Terms and Conditions
+Refer to the README_terms_and_conditions.txt file located in the installation directory in the
+<UVM Reference Flow Install area>.
+
+Scope
+This document provides the architectural design for the Ethernet Switch SoC design, which
+used as the basis to demonstrate the UVM reference flow.
+
+Introduction
+The functional block diagram of the complete Ethernet switch SoC design is shown in Figure 1.
+It has an Ethernet MAC, a processor (Open Risc) and a look-up table to carry out the address
+resolution. This document specifies the architecture of the SoC.
+
+Figure 1: Ethernet Switch Design
+
+December 2011
+
+4
+
+UVM Reference Flow version 1.0
+
+The SoC has the following key components:
+1. Processor Subsystem
+a. An Open RISC Processor
+b. AMBA AHB network interconnect
+c. On-chip Memories and memory controllers
+d. DMA
+2. Open Core Ethernet Media Access controller (MAC)
+3. Address Look up table (ALUT)
+4. Support and Control functions. For instance power management and peripherals like
+UART, SPI, GPO, timer etc
+In normal operation, the data flow occurs between two or more of the Ethernet MAC ports. An
+incoming Ethernet packet from a MAC interface is switched to one or more (broadcast) MAC
+ports based on the result from Address Lookup up Table (ALUT).
+The switching is performed by the embedded firmware running on the processor. The firmware
+is responsible to allocate the buffers (in the on-chip RAM) into which the MACs can source and
+sink packets. When a complete packet is available in the memory, the firmware is notified about
+it. The firmware then parses the packet, extracts the headers and does a lookup on the ALUT.
+Based on the lookup result, the packet is switched by the firmware to one or more MACs.
+
+System AHB bus
+The SoC is built around a multilayer AHB bus which inter-connects the CPU, the memory and
+peripherals.
+A multi-layer implementation can support more parallel accesses than a single layer bus.
+AHB masters on the bus initiate data transfers and AHB slaves respond to the data requests. The
+masters are not memory mapped, while the slaves are memory mapped. Refer to the memory
+map at the end of the spec for information on the slaves’ memory map.
+The bus has a 32-bit data width and runs at half the CPU speed. At 100MHz, the bus can
+support burst data rates of 400 MB per second for each master-slave channel.
+
+December 2011
+
+5
+
+UVM Reference Flow version 1.0
+
+Masters
+
+Slaves
+
+MAC
+0
+
+M0
+
+Multi
+Layer
+AHB
+
+SRAM
+S1
+
+MAC
+1
+
+M1
+
+ROM
+S2
+MAC
+2
+
+M2
+AHB
+to
+APB
+
+S3
+MAC
+3
+
+APB
+Bus
+
+M3
+
+SMC
+
+S4
+CPU
+
+WB
+To
+AHB
+
+M4
+
+DMA
+(Conf)
+
+S5
+DMA
+M5
+
+AHB
+to
+APB
+
+S6
+
+APB
+Bus
+
+The figure above shows six masters connected to six slaves through the multi-layer AHB.
+The APB peripherals interface to the AHB bus through a translating AHB-to-APB bridge.
+The table below depicts the connectivity between masters and slaves in the design.
+An “X” indicates that access is legal.
+
+Master
+
+SRAM
+S1
+
+M AC0
+
+X
+
+M AC1
+
+X
+
+M AC2
+
+X
+
+CPU
+
+X
+
+DMA
+
+X
+
+December 2011
+
+ROM
+S2
+
+APB
+Bridge S3
+
+SMC
+S4
+
+DMA
+S5
+
+APB Bridge
+S6
+
+X
+
+X
+
+X
+
+X
+
+X
+
+6
+
+UVM Reference Flow version 1.0
+
+</pre>
+</body>
+</html>

@@ -1,0 +1,132 @@
+Adapter Developer News and Updates             File: adapter-updates.txt
+==================================
+
+Below is a list of updates on the UVM-ML adapters. These include changes in 
+APIs that impact Adapter Developers, and will require an update in the 
+adapter code when moving from an older to newer versions of the UVM-ML 
+library. The changes are arranged by version numbers.
+
+Changes from UVM-ML-1.2.2 to UVM-ML-1.2.3
+-----------------------------------------
+
+1. backplane/bp_provided.h (Provided API functions)
+
+- The return value type of function bp_run_test_type has changed from void 
+  to int (0 – error, 1 – success). The calling adapter should check the 
+  result. 
+  New:  typedef int (*bp_run_test_type)...
+- The signature of function bp_register_srv_providers_type has changed. 
+  It now receives an additional argument framework_id for compliance with 
+  the rest of the API functions.
+  New:  typedef void (*bp_register_srv_providers_type)
+          (
+            unsigned                  framework_id, 
+            bp_srv_provider_struct *  srv_providers
+          );
+- Function bp_notify_tree_phase() was renamed to bp_transmit_phase(). 
+  It accepts also an extra argument phase_action. 
+  New: typedef int (*bp_transmit_phase_type)
+         (
+            unsigned int              framework_id,
+            const char *              target_frmw_ind,
+            int                       target_id,
+            const char *              phase_group,
+            const char *              phase_name,
+            uvm_ml_phase_action       phase_action
+         );
+
+2. backplane/bp_required.h (Required API functions)
+
+- The return value type of function frmw_startup_type has changed: 
+  it now returns a value (0 – error, 1 – success). The caller should 
+  check the result. 
+  New: typedef int (* frmw_startup_type)();
+- Function frmw_notify_tree_phase_type () was renamed to
+  frmw_transmit_phase_type(), and it accepts an additional argument 
+  phase_action. 
+  New: typedef int (*frmw_transmit_phase_type)
+      (
+         int                 target_id,
+         const char *        phase_group,
+         const char *        phase_name,
+         uvm_ml_phase_action phase_action
+      );
+
+3. adapters/uvm_sv/uvm_ml_sv.cpp
+
+- The return value type of function uvm_ml_sv_register_framework() 
+  changed from unsigned to int (>= 0  – framework id, < 0  – error). 
+  New: int uvm_ml_sv_register_framework() ...
+- Function uvm_ml_sv_notify_tree_phase() was renamed to 
+  uvm_ml_sv_transmit_phase(). An extra argument phase_action was added. 
+  New: int uvm_ml_sv_transmit_phase(const char * target_frmw_ind,
+                            int          target_id,
+                            const char * phase_group,
+                            const char * phase_name,
+                            unsigned int phase_action);
+- The signature of function uvm_ml_sv_notify_phase_done() has changed: 
+  an unneeded argument framework_id was removed for compliance with the 
+  rest of the API functions. 
+  New: int uvm_ml_sv_notify_phase_done
+               (
+                  char * phase_group,
+                  char * phase_name
+               );
+- Added a new function uvm_ml_sv_register_srv_providers() corresponding to 
+  the new SystemVerilog DPI import function uvm_ml_register_srv_providers(). 
+  New: void uvm_ml_sv_register_srv_providers
+               (
+                  bp_srv_provider_struct * provider
+               );
+- The signature of function uvm_ml_sv_run_test() has changed: a new output 
+  argument "result" was added. The return value of a C function associated 
+  with a SV DPI import task is used to signify whether the foreign task 
+  returned or was disabled (0 = test failed). 
+         New: int uvm_ml_sv_run_test
+                (
+                  int     framework_id, const svOpenArrayHandle svTops, 
+                  char *  svTest,       int *  result
+                );
+
+4. adapters/uvm_sv/uvm_ml_import.svh
+
+- The return value type of function uvm_ml_register_framework() has changed 
+  from int unsigned to int. A negative value can be returned upon a failure 
+  to register the framework at the backplane. 
+  New: import "DPI-C" context uvm_ml_sv_register_framework = 
+     function int uvm_ml_register_framework();
+- Function uvm_ml_notify_tree_phase() was renamed to 
+  uvm_ml_transmit_phase(). An additional argument phase_action was added. 
+  New: import "DPI-C" context uvm_ml_sv_transmit_phase = 
+          function int uvm_ml_transmit_phase(
+           string target_frmw_ind, int target_id, string phase_group, 
+           string phase_name, uvm_ml_phase_action_e phase_action);
+- Task uvm_ml_notify_runtime_phase() was replaced with a function of the 
+  same name. The type of argument participate has changed from output int 
+  to output int unsigned. 
+  New: import "DPI-C" context uvm_ml_sv_notify_runtime_phase = 
+                  function uvm_ml_notify_runtime_phase(
+                      string phase_group,     string phase_name, 
+                      uvm_ml_phase_action_e   phase_action, 
+                      output int unsigned     participate);
+- The signature of task uvm_ml_run_test() has changed: a new output 
+  argument "result" was added. The return value is used to signify if the 
+  foreign task returned or was disabled (0 – test failed). 
+         New: import "DPI-C" context uvm_ml_sv_run_test = 
+              task uvm_ml_run_test(int unsigned adapter_id, 
+                  string tops[], string test, output int result);
+- The type of the argument transaction_id of function 
+  uvm_ml_tlm2_nb_transport_fw() was changed from inout to input (a bug fix). 
+  New: import "DPI-C" context uvm_ml_sv_tlm2_nb_transport_fw = 
+                  function uvm_tlm_sync_e uvm_ml_tlm2_nb_transport_fw(
+                      int unsigned conn_id, inout int unsigned stream_size, 
+                      inout `STREAM_T stream, inout uvm_tlm_phase_e p,
+                      input int unsigned transaction_id, 
+                      inout uvm_ml_time_unit_e delay_unit, 
+                      inout real delay_val);
+- The signature of function uvm_ml_ notify_phase_done() has changed: 
+  an unneeded argument framework_id was removed for compliance with the 
+  rest of the API functions. 
+  New: import "DPI-C" context uvm_ml_sv_notify_phase_done = 
+              task uvm_ml_notify_phase_done(
+                   string phase_group, string phase_name);

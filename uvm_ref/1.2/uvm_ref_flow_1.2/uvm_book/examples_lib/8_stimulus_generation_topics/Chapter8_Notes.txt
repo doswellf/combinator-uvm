@@ -1,0 +1,19 @@
+A Practical Guide to Adopting the Universal Verification Methodology (UVM)
+--------------------------------------------------------------------------
+Chapter 8: Stimulus Generation Topics
+--------------------------------------------------------------------------
+Each example file has a header with instructions on how to run the testcase.
+
+In general, examples in this directory can be run on IUS using the following command:
+
+  %  irun -uvm <filename>
+
+OR:
+
+  %  irun -uvmhome $UVM_HOME <filename>
+==============================================================================
+  Example 8-1: Using p_sequencer in a sequence
+  Example 8-2: Handling interrupts using Sequences
+  Example 8-2a: Sequence Layering in One Sequencer
+  Example 8-3: Layered Sequencers
+  Example 8-4: Layered Sequences

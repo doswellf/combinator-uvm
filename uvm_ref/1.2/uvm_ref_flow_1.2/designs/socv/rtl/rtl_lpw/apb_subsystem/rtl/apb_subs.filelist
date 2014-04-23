@@ -1,0 +1,41 @@
+
+//Design files
+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/apb_subsystem/rtl/apb_subsystem_0.v
+
+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/apb_subsystem/rtl/gpio_veneer.v
+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/apb_subsystem/rtl/ttc_veneer.v
+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/apb_subsystem/rtl/smc_veneer.v
+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/apb_subsystem/rtl/power_ctrl_veneer.v
+
+//for ahb2apb 
++incdir+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/ahb2apb/rtl
+-f $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/ahb2apb/rtl/ahb2apb.f
+
+//for spi and uart
++incdir+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/opencores
+-f $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/opencores/oc_spi.f
+-f $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/opencores/oc_uart.f
+
+//for gpio
++incdir+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/gpio/rtl
+-f $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/gpio/rtl/gpio_lite.f
+
+
+//for ttc
++incdir+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/ttc/rtl
+-f $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/ttc/rtl/ttc_lite.f
+
+       
+
+//for smc
++incdir+$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/smc/rtl
+-f $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/smc/rtl/smc_lite.f
+
+
+//for power control
+ $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/power_ctrl/rtl/power_ctrl.v
+ $SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/power_ctrl/rtl/power_ctrl_sm.v
+
+
+
+

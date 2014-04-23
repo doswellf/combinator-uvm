@@ -1,0 +1,9 @@
+-incdir ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_busmatrix
+
+busmatrix.v
+
+arbiter.v
+master_if.v
+multiplexer.v
+req_register.v
+slave_if.v

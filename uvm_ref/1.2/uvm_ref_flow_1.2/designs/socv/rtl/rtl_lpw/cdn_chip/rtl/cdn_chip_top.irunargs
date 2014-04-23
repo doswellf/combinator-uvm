@@ -1,0 +1,37 @@
+// IGNORE THESE IF YOU ARE SYNTHESISING OR RUNNING LEC
+// ----------------------------------------------------
+//Virage Memories
+// Note this turns timing checks in the Virage memories off
+// remove this when copying to gate-level environment
+-define VIRAGE_FAST_VERILOG
+
+// VCO
+//$SOCV_KIT_HOME/designs/socv/rtl/rtl_lpw/misc/rtl/vco.vams
+
+//Design files
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_chip/rtl/cdn_chip_top.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/wb_to_ahb/rtl/wb2ahb.v
+
+
+// for the bus matrix
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_busmatrix/busmatrix.irunargs
+
+//for sram_subsystem
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/sram_subsystem/rtl/sram_subsystem.irunargs
+
+//for APB subsystem
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/apb_subsystem/rtl/apb_subsystem.irunargs
+
+//for macb
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/opencores/mac.irunargs
+//${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/macb/rtl/macb_veneer.v
+
+
+//AHB2OCP bridge
+-incdir ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_chip/rtl
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_chip/rtl/ahb2ocp.v
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/cdn_chip/rtl/ahb2ocp_ram.v
+
+// MIPI - to be removed once mipi is checked in
+-F ${SOCV_KIT_HOME}/designs/socv/rtl/rtl_mipi/csi_rx/rtl/csi.irunargs
+${SOCV_KIT_HOME}/designs/socv/rtl/rtl_lpw/misc/rtl/generic_dpsram.v

@@ -1,0 +1,54 @@
+A Practical Guide to Adopting the Universal Verification Methodology (UVM)
+=======================================================================
+Chapter 4: UVM Library Basics
+=======================================================================
+Each example file has a header with instructions on how to run the
+testcase.
+
+In general, examples in this directory can be run on Incisive
+Enterprise Simulator using the following command:
+
+  %  irun -uvm  <filename>
+
+OR  
+
+  %  irun -uvmhome $UVM_HOME  <filename>
+
+These commands will automatically compile the UVM library and dpi files.
+If you want to compile the library instead of allowing the simulator to
+automatically handle it, use the following command-line options:
+
+% irun -uvmhome $UVM_HOME -uvmnoautocompile $UVM_HOME/src/uvm_pkg.sv \
+        $UVM_HOME/src/dpi/uvm_dpi.cc myfile.sv
+========================================================================
+Section 4.1: ex4-0_hello_world.sv - Hello World Example
+Section 4.3: apb_transfer.sv - APB transfer for UVM Examples
+Section 4.3: ex4-1_apb_transfer_no_uvm.sv - Non-UVM APB Transfer
+Section 4.3: ex4-2_apb_transfer.svi - APB Transfer from uvm_object
+Section 4.3: ex4-3_field_automation.se - UVM Field Automation Example
+Section 4.3: ex4-4_object_automation.sv - UVM Object copy, clone, print
+Section 4.4: ex4-5_sim_phases.sv - Simulation Phases and Hierarchy Methods
+Section 4.5: ex4-6_default_config.sv - Configuration Using Default Settings
+Section 4.5: ex4-7_config.sv - Override configuration from testbench
+Section 4.5: ex4-8_config_coverage.sv - Configuration of coverage_enable
+Section 4.5: ex4-8a_check_config.sv - Check configuration database 
+Section 4.6: simple_packet.sv - Simple Packet for TLM Examples
+Section 4.6: ex4-9_tlm_put.sv - TLM put() Example
+Section 4.6: ex4-10_tlm_get.sv - TLM get() Example
+Section 4.6: ex4-11_tlm_port_connect.sv - TLM Connect - PORT
+Section 4.6: ex4-12_tlm_export_connect.sv - TLM Connect - EXPORT
+Section 4.6: ex4-13_tlm_fifo.sv - TLM Fifo Usage
+Section 4.6: ex4-14_analysis_port.sv - Collector with Analysis Port
+Section 4.6: ex4-15_analysis_imp.sv - Component with Analysis Export
+Section 4.6: ex4-16_decl_macros.sv - Scoreboard with uvm_analysis_imp_decl
+Section 4.7: ex4-17_non_factory.sv - Allocation witout using the Factory
+Section 4.7: ex4-18_uvm_factory.sv - UVM Factory - Default Allocation
+Section 4.7: ex4-19_uvm_factory.sv - UVM Factory - Overriding the Driver
+Section 4.8: ex4-20_messages.sv - UVM Message Macros
+Section 4.9: ex4-21a_callbacks.sv - UVM Callback Driver Example
+Section 4.9: ex4-21b_callbacks.sv - UVM Callback Driver Example 2
+Section 4.9: ex4-21_message_callback.sv - UVM Report Callback for Messages
+Section 4.9: message_callback_test.sv - Report Catcher using "CAUGHT"
+Section 4.10: ex4-22_simple_objections.sv - UVM Objections Example
+Section 4.10: ex4-22_objection_methods.sv - More Complex Objections Example
+Section 4.10: ex4-23_heartbeat.sv - UVM Heartbeat Example
